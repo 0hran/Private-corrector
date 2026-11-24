@@ -72,13 +72,16 @@ async function run() {
   controller = new AbortController();
   setBusy(true);
   try {
-    const model = await PCGemini.resolveModel(s.geminiApiKey, s.geminiModel);
-    $("sub").textContent = "Gemini · " + model;
     $("statusText").textContent = "Gemini is writing…";
     const prompt = pcBuildPrompt(actions, job.text, s, job.question);
-    const out = await PCGemini.generate({
+    const out = await PCGemini.generateWithFallback({
       apiKey: s.geminiApiKey,
-      model,
+      chosen: s.geminiModel,
+      onStatus: (msg) => {
+        $("statusText").textContent = msg;
+        result = "";
+        render();
+      },
       prompt,
       search: actions.some((a) => a.id === "papers"),
       signal: controller.signal,
@@ -88,12 +91,13 @@ async function run() {
       }
     });
     done = true;
+    $("sub").textContent = "Gemini · " + out.model;
     result = rewriteOnly() ? out.text.trim() : out.text;
     render();
     finish(out);
   } catch (err) {
     if (err.name === "AbortError") return;
-    showError(err.message || String(err));
+    showError((err.message || String(err)) + (err.code === "server" || err.code === "quota" ? "\n\nAll the available Gemini models were tried. Click Regenerate in a moment." : ""));
     if (err.code === "key") $("setup").hidden = false;
   } finally {
     setBusy(false);

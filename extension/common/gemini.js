@@ -38,7 +38,10 @@ var PCGemini = (function () {
       return new GeminiError("This Gemini model is not available (" + detail + "). Choose another model in the settings.", "model");
     }
     if (res.status >= 500) {
-      return new GeminiError("Gemini is unavailable right now (" + res.status + "). Try again in a moment.", "server");
+      return new GeminiError(
+        "Gemini is overloaded or unavailable right now (" + res.status + (detail ? ": " + detail : "") + "). Try again in a moment.",
+        "server"
+      );
     }
     return new GeminiError("Gemini error " + res.status + ": " + detail, "other");
   }
@@ -59,30 +62,84 @@ var PCGemini = (function () {
     return m ? parseFloat(m[1]) : 0;
   }
 
-  /* Newest "Flash" model (fast and part of the free tier), stable versions first. */
-  function pickFlash(models) {
-    const flash = models.filter((m) => /flash/i.test(m.id) && !/lite|8b|thinking/i.test(m.id));
-    const stable = flash.filter((m) => !/preview|exp|latest/i.test(m.id));
-    const pool = stable.length ? stable : flash;
-    pool.sort((a, b) => version(b.id) - version(a.id) || a.id.length - b.id.length);
-    return pool[0] ? pool[0].id : FALLBACK_MODEL;
+  /*
+   * Flash models in order of preference (fast and part of the free tier):
+   * stable Flash (newest first), then preview Flash, then Flash-Lite.
+   */
+  function rankFlash(models) {
+    const byVersion = (a, b) => version(b.id) - version(a.id) || a.id.length - b.id.length;
+    const flash = models.filter((m) => /flash/i.test(m.id) && !/8b|thinking/i.test(m.id));
+    const isLite = (m) => /lite/i.test(m.id);
+    const isPreview = (m) => /preview|exp|latest/i.test(m.id);
+    const groups = [
+      flash.filter((m) => !isLite(m) && !isPreview(m)),
+      flash.filter((m) => !isLite(m) && isPreview(m)),
+      flash.filter((m) => isLite(m) && !isPreview(m)),
+      flash.filter((m) => isLite(m) && isPreview(m))
+    ];
+    const ids = groups.flatMap((g) => g.sort(byVersion)).map((m) => m.id);
+    return ids.length ? ids : [FALLBACK_MODEL];
   }
 
-  /* The model to use: the one chosen in the settings, or the newest Flash (cached for a day). */
+  function pickFlash(models) {
+    return rankFlash(models)[0];
+  }
+
+  /*
+   * Models to try, in order: the one chosen in the settings (if any), then the Flash
+   * models (list cached for a day). Used to fall back when a model is overloaded.
+   */
+  async function resolveModels(apiKey, chosen) {
+    const { geminiAutoModels } = await browser.storage.local.get("geminiAutoModels");
+    let ranked;
+    if (geminiAutoModels && geminiAutoModels.key === apiKey.slice(-6) && Date.now() - geminiAutoModels.at < 86400000) {
+      ranked = geminiAutoModels.ids;
+    } else {
+      ranked = [FALLBACK_MODEL];
+      try {
+        ranked = rankFlash(await listModels(apiKey));
+        await browser.storage.local.set({ geminiAutoModels: { ids: ranked, at: Date.now(), key: apiKey.slice(-6) } });
+      } catch (err) {
+        if (err.code === "key") throw err;
+      }
+    }
+    const list = chosen && chosen !== "auto" ? [chosen, ...ranked.filter((id) => id !== chosen)] : ranked;
+    return list.slice(0, 5);
+  }
+
   async function resolveModel(apiKey, chosen) {
-    if (chosen && chosen !== "auto") return chosen;
-    const { geminiAutoModel } = await browser.storage.local.get("geminiAutoModel");
-    if (geminiAutoModel && geminiAutoModel.key === apiKey.slice(-6) && Date.now() - geminiAutoModel.at < 86400000) {
-      return geminiAutoModel.id;
+    return (await resolveModels(apiKey, chosen))[0];
+  }
+
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  /*
+   * generate() with automatic recovery: when a model is overloaded (5xx) it retries once
+   * after a pause, then moves on to the next model; when a model's free quota is used up
+   * (429) or it is not available (404), it moves on to the next model straight away.
+   * onStatus(message) reports what is happening.
+   */
+  async function generateWithFallback({ apiKey, chosen, onStatus, ...opts }) {
+    const models = await resolveModels(apiKey, chosen);
+    let lastError = null;
+    for (let i = 0; i < models.length; i++) {
+      const model = models[i];
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          if (i > 0 || attempt > 0) onStatus && onStatus(attempt ? `Gemini is busy, trying ${model} again…` : `Trying ${model}…`);
+          return await generate({ apiKey, model, ...opts });
+        } catch (err) {
+          if (err.name === "AbortError" || err.code === "key") throw err;
+          lastError = err;
+          if (err.code === "server" && attempt === 0) {
+            await sleep(1500);
+            continue; // retry the same model once
+          }
+          break; // next model
+        }
+      }
     }
-    let id = FALLBACK_MODEL;
-    try {
-      id = pickFlash(await listModels(apiKey));
-    } catch (err) {
-      if (err.code === "key") throw err;
-    }
-    await browser.storage.local.set({ geminiAutoModel: { id, at: Date.now(), key: apiKey.slice(-6) } });
-    return id;
+    throw lastError;
   }
 
   /*
@@ -153,5 +210,5 @@ var PCGemini = (function () {
     return { text, finishReason, blocked, model, sources: [...sources].map(([url, title]) => ({ url, title })) };
   }
 
-  return { generate, resolveModel, listModels, pickFlash, GeminiError };
+  return { generate, generateWithFallback, resolveModel, resolveModels, listModels, pickFlash, rankFlash, GeminiError };
 })();
