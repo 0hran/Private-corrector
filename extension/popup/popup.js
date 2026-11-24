@@ -71,26 +71,58 @@ async function readClipboard() {
 }
 loadSelection();
 
+/* ---------- Choosing functions (several can be combined) ---------- */
+
+const SELECTED_KEY = "pc-popup-selected";
+let selected = new Set();
+try {
+  selected = new Set(JSON.parse(localStorage.getItem(SELECTED_KEY) || "[]").filter((id) => PC_ACTIONS.some((a) => a.id === id)));
+} catch (_) {}
+
 for (const action of PC_ACTIONS) {
   const b = document.createElement("button");
-  b.className = "btn";
+  b.className = "chip";
   b.textContent = action.title;
-  b.addEventListener("click", () => {
-    if (action.needsQuestion) {
-      $("ask").hidden = false;
-      $("question").focus();
-    } else {
-      send(action.id);
-    }
+  b.dataset.id = action.id;
+  b.title = "Click to select or unselect. Double-click to send this function alone.";
+  b.addEventListener("click", () => toggle(action));
+  b.addEventListener("dblclick", () => {
+    selected = new Set([action.id]);
+    refresh();
+    send();
   });
   $("actions").appendChild(b);
 }
 
-$("send").addEventListener("click", () => send("ask"));
+function toggle(action) {
+  if (selected.has(action.id)) {
+    selected.delete(action.id);
+  } else {
+    // British and American English cannot be combined.
+    if (action.group) PC_ACTIONS.filter((a) => a.group === action.group).forEach((a) => selected.delete(a.id));
+    selected.add(action.id);
+  }
+  refresh();
+  if (action.needsQuestion && selected.has(action.id)) $("question").focus();
+}
+
+function refresh() {
+  document.querySelectorAll("#actions .chip").forEach((b) => b.classList.toggle("on", selected.has(b.dataset.id)));
+  $("ask").hidden = !selected.has("ask");
+  const n = selected.size;
+  $("go").disabled = n === 0;
+  $("go").textContent = n > 1 ? `Send ${n} combined functions to Claude` : "Send to Claude";
+  try {
+    localStorage.setItem(SELECTED_KEY, JSON.stringify([...selected]));
+  } catch (_) {}
+}
+refresh();
+
+$("go").addEventListener("click", () => send());
 $("question").addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
-    send("ask");
+    send();
   }
 });
 $("settings").addEventListener("click", () => {
@@ -98,17 +130,23 @@ $("settings").addEventListener("click", () => {
   window.close();
 });
 
-async function send(actionId) {
+async function send() {
   const text = $("input").value.trim();
-  if (!text) {
-    $("error").textContent = "Type or paste some text first.";
+  const error = (msg) => {
+    $("error").textContent = msg;
     $("error").hidden = false;
-    return;
+  };
+  if (!text) return error("Type or paste some text first.");
+  if (!selected.size) return error("Select at least one function.");
+  if (selected.has("ask") && !$("question").value.trim()) {
+    $("question").focus();
+    return error("Type your question for “Ask Claude…”.");
   }
-  const res = await browser.runtime.sendMessage({ type: "pc-send", actionId, text, question: $("question").value.trim() });
+  // Keep the order of the list, whatever the order of the clicks.
+  const actionIds = PC_ACTIONS.filter((a) => selected.has(a.id)).map((a) => a.id);
+  const res = await browser.runtime.sendMessage({ type: "pc-send", actionIds, text, question: $("question").value.trim() });
   if (res && !res.filled) {
-    $("error").textContent = "The prompt is on your clipboard: click in Claude's message box and press Ctrl+V.";
-    $("error").hidden = false;
+    error("The prompt is on your clipboard: click in Claude's message box and press Ctrl+V.");
   } else {
     window.close();
   }

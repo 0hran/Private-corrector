@@ -4,6 +4,7 @@
 var PC_ACTIONS = [
   {
     id: "correct",
+    task: "correct the spelling, grammar, punctuation and typography errors while changing as little as possible",
     title: "Correct (minimal changes)",
     rewrite: true,
     instructions:
@@ -15,6 +16,7 @@ var PC_ACTIONS = [
   },
   {
     id: "reformulate",
+    task: "reformulate it so that it reads clearly and fluently, keeping its meaning, tone and roughly its length",
     title: "Reformulate",
     rewrite: true,
     instructions:
@@ -25,6 +27,7 @@ var PC_ACTIONS = [
   },
   {
     id: "academic",
+    task: "put it in a formal academic register (precise vocabulary, objective tone, hedged claims, no colloquialisms), without inventing data, results or citations",
     title: "Make it more academic",
     rewrite: true,
     instructions:
@@ -36,6 +39,8 @@ var PC_ACTIONS = [
   },
   {
     id: "british",
+    group: "variety", // British and American English exclude each other
+    task: "use British English spelling, vocabulary and punctuation conventions (colour, organise, flat, single quotation marks)",
     title: "Convert to British English",
     rewrite: true,
     instructions:
@@ -49,6 +54,8 @@ var PC_ACTIONS = [
   },
   {
     id: "american",
+    group: "variety",
+    task: "use American English spelling, vocabulary and punctuation conventions (color, organize, apartment, double quotation marks)",
     title: "Convert to American English",
     rewrite: true,
     instructions:
@@ -62,6 +69,8 @@ var PC_ACTIONS = [
   },
   {
     id: "develop",
+    task: "Develop the ideas of the text into well-structured content, with explanations, arguments and examples, staying faithful to my intent; point out any claim that would need a source.",
+    section: "Developed content",
     title: "Develop / provide content",
     rewrite: false,
     instructions:
@@ -71,6 +80,8 @@ var PC_ACTIONS = [
   },
   {
     id: "papers",
+    task: "Suggest relevant research papers: full reference (authors, year, title, venue), DOI or link when available, and one or two sentences on why each is relevant. Search the web to check that each paper exists if you can; never invent a reference.",
+    section: "Research papers",
     title: "Suggest research papers",
     rewrite: false,
     instructions:
@@ -83,6 +94,8 @@ var PC_ACTIONS = [
   },
   {
     id: "explain",
+    task: "Explain the text in plain words: a short summary, the key ideas, the technical terms and any implicit context, with a simple example where it helps; point out errors or debatable claims briefly.",
+    section: "Explanation",
     title: "Explain",
     rewrite: false,
     instructions:
@@ -93,6 +106,7 @@ var PC_ACTIONS = [
   },
   {
     id: "ask",
+    section: "Answer to my question",
     title: "Ask Claude…",
     rewrite: false,
     needsQuestion: true,
@@ -104,19 +118,63 @@ function pcGetAction(id) {
   return PC_ACTIONS.find((a) => a.id === id) || PC_ACTIONS[0];
 }
 
-/* Build the full prompt pasted into claude.ai. */
-function pcBuildPrompt(action, text, settings, question) {
+function pcLanguageLine(settings) {
+  return settings.answerLanguage === "same"
+    ? "Answer in the same language as the text."
+    : `Answer in ${settings.answerLanguage}.`;
+}
+
+/*
+ * Build the full prompt pasted into claude.ai.
+ * `actions` is one action or a list of actions to combine in a single prompt.
+ */
+function pcBuildPrompt(actions, text, settings, question) {
+  const list = (Array.isArray(actions) ? actions : [actions]).filter(Boolean);
   const parts = [];
-  parts.push(action.needsQuestion ? (question || "Explain this text.") : action.instructions);
-  if (!action.rewrite) {
-    parts.push(
-      settings.answerLanguage === "same"
-        ? "Answer in the same language as the text."
-        : `Answer in ${settings.answerLanguage}.`
-    );
+  const custom = settings.customInstructions && settings.customInstructions.trim();
+  const ask = (q) => q || "Explain this text.";
+
+  if (list.length === 1) {
+    const action = list[0];
+    parts.push(action.needsQuestion ? ask(question) : action.instructions);
+    if (!action.rewrite) parts.push(pcLanguageLine(settings));
+  } else {
+    const rewrites = list.filter((a) => a.rewrite);
+    const others = list.filter((a) => !a.rewrite);
+    const rewriteTask = rewrites.length
+      ? "Rewrite the text so that, at the same time, you " +
+        rewrites.map((a) => a.task).join("; and ") +
+        ". Keep everything else (meaning, structure, formatting) unchanged."
+      : "";
+
+    if (!others.length) {
+      // Only rewriting functions: one rewritten text, nothing else.
+      parts.push(
+        "Work on the text inside the <text> tags. " + rewriteTask +
+          " Reply with the rewritten text only, with no introduction or explanation, so that I can copy it directly."
+      );
+    } else {
+      const sections = [];
+      if (rewrites.length) {
+        sections.push(
+          "Rewritten text: " + rewriteTask +
+            " Give the rewritten text alone in this section, without comments, so that I can copy it."
+        );
+      }
+      for (const a of others) {
+        sections.push(a.section + ": " + (a.needsQuestion ? ask(question) : a.task));
+      }
+      parts.push(
+        "Do the following with the text inside the <text> tags, in this order, each under its own short heading:\n" +
+          sections.map((t, i) => `${i + 1}. ${t}`).join("\n") +
+          "\n" +
+          (rewrites.length
+            ? "The rewritten text keeps the language of the original. For the other sections, " +
+              pcLanguageLine(settings).replace(/^Answer/, "answer")
+            : pcLanguageLine(settings))
+      );
+    }
   }
-  if (settings.customInstructions && settings.customInstructions.trim()) {
-    parts.push(settings.customInstructions.trim());
-  }
-  return parts.join(" ") + `\n\n<text>\n${text.trim()}\n</text>`;
+  if (custom) parts.push(custom);
+  return parts.join(list.length === 1 ? " " : "\n") + `\n\n<text>\n${text.trim()}\n</text>`;
 }

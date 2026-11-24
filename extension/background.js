@@ -22,10 +22,17 @@ async function createMenus() {
   for (const action of PC_ACTIONS) {
     browser.menus.create({ id: "pc-" + action.id, parentId: "pc-root", title: action.title, contexts: ["selection"] });
   }
+  browser.menus.create({ id: "pc-sep", parentId: "pc-root", type: "separator", contexts: ["selection"] });
+  browser.menus.create({ id: "combine", parentId: "pc-root", title: "Combine several functions…", contexts: ["selection"] });
 }
 createMenus();
 
 browser.menus.onClicked.addListener(async (info, tab) => {
+  if (info.menuItemId === "combine") {
+    // Opens the toolbar popup, which picks up the selection; must run before any await.
+    browser.action.openPopup().catch(() => notify("Click the Private Corrector icon in the toolbar to combine functions."));
+    return;
+  }
   if (!String(info.menuItemId).startsWith("pc-")) return;
   const action = pcGetAction(String(info.menuItemId).slice(3));
   const frames = info.frameId != null ? [info.frameId] : undefined;
@@ -46,9 +53,10 @@ browser.commands.onCommand.addListener(async (command) => {
 });
 
 browser.runtime.onMessage.addListener(async (msg) => {
-  // From the popup: { type: "pc-send", actionId, text, question }
+  // From the popup: { type: "pc-send", actionIds: [...], text, question }
   if (msg && msg.type === "pc-send") {
-    return sendToClaude(pcGetAction(msg.actionId), msg.text, msg.question);
+    const actions = (msg.actionIds || []).map(pcGetAction);
+    return sendToClaude(actions, msg.text, msg.question);
   }
 });
 
@@ -77,6 +85,7 @@ async function run(action, text, tab, frames) {
  * Closing the window ends the incognito chat. You press Send yourself.
  */
 async function sendToClaude(action, text, question) {
+  // `action` is one action or a list of actions combined in one prompt.
   const settings = await getSettings();
   const prompt = pcBuildPrompt(action, text, settings, question);
   await copyToClipboard(prompt);

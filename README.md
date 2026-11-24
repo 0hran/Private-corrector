@@ -28,6 +28,12 @@ A Firefox extension that sends the text you select to **claude.ai**, together wi
 
 Claude re-reads the whole chat at each message, so close the window now and then: a long chat uses up your usage limits faster and mixes in your earlier texts. Incognito can be turned off in the settings.
 
+**Combining functions.** In the toolbar popup, click several functions to select them (they turn orange with a ✓), then click **Send to Claude**. Everything goes to Claude in a single prompt:
+- several rewriting functions (Correct, Reformulate, Academic, British or American English) are applied together to give **one** rewritten text, for example *Correct + British English* or *Academic + American English*;
+- the other functions (Develop, Papers, Explain, Ask) each get their own section in the answer, after the rewritten text.
+
+British and American English can't be selected together. Your choice is remembered for next time. Double-click a function to send it alone right away. From the right-click menu, **Combine several functions…** opens the popup with your selection already in it.
+
 Keyboard shortcuts: `Alt+Shift+C` (correct) and `Alt+Shift+A` (ask). You can change them in `about:addons`: click the gear icon, then **Manage Extension Shortcuts**.
 
 The **toolbar button** opens a popup with the same actions. Text you selected on the page before clicking the icon is pasted into the popup automatically, so you can check or edit it before choosing an action.

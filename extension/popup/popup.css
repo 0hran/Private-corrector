@@ -18,3 +18,11 @@ textarea { width: 100%; background: var(--soft); border: 1px solid var(--border)
 .ask textarea { flex: 1; }
 .error { color: var(--err); background: var(--err-bg); padding: 8px; border-radius: 8px; }
 .hint { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
+.label { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+.chip { border: 1px solid var(--border); background: var(--soft); border-radius: 999px; padding: 4px 11px; cursor: pointer; font-size: 13px; }
+.chip:hover { border-color: var(--accent); }
+.chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.chip.on::before { content: "✓ "; }
+.go { width: 100%; margin-top: 8px; padding: 8px; }
+.go:disabled { opacity: .45; cursor: default; }
+[hidden] { display: none !important; }

@@ -14,11 +14,12 @@
   </header>
   <textarea id="input" rows="7" placeholder="Select text on the page before clicking the icon, or paste or type text here…"></textarea>
   <p id="loaded" class="hint" hidden>✓ Text selected in the page pasted here.</p>
-  <div id="ask" class="ask" hidden>
-    <textarea id="question" rows="2" placeholder="Your question or instruction… (Enter to send)"></textarea>
-    <button id="send" class="btn primary">Ask</button>
-  </div>
+  <p class="label">Choose one or several functions:</p>
   <div id="actions" class="actions"></div>
+  <div id="ask" class="ask" hidden>
+    <textarea id="question" rows="2" placeholder="Your question for “Ask Claude…” (Enter to send)"></textarea>
+  </div>
+  <button id="go" class="btn primary go" disabled>Send to Claude</button>
   <div id="error" class="error" hidden></div>
   <p class="hint">Puts your text and the instructions in your Claude page, ready for you to send. The prompt is also copied to the clipboard.</p>
   <script src="../common/actions.js"></script>
