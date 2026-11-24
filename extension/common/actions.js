@@ -38,6 +38,18 @@ var PC_ACTIONS = [
       "rewritten text only, with no introduction or explanation, so that I can copy it directly."
   },
   {
+    id: "shorten",
+    title: "Shorten",
+    task: "shorten it by {amount}, keeping the key ideas, facts and conclusions, and cutting repetitions, filler and secondary details",
+    rewrite: true,
+    instructions:
+      "Shorten the text inside the <text> tags by {amount}. Keep its key ideas, facts, figures and " +
+      "conclusions, its language, its tone and its formatting; cut repetitions, filler words, " +
+      "redundant phrasing and secondary details, and merge sentences where it helps. Do not add " +
+      "anything new. Fix any errors. Reply with the shortened text only, with no introduction or " +
+      "explanation, so that I can copy it directly."
+  },
+  {
     id: "british",
     group: "variety", // British and American English exclude each other
     task: "use British English spelling, vocabulary and punctuation conventions (colour, organise, flat, single quotation marks)",
@@ -176,5 +188,7 @@ function pcBuildPrompt(actions, text, settings, question) {
     }
   }
   if (custom) parts.push(custom);
-  return parts.join(list.length === 1 ? " " : "\n") + `\n\n<text>\n${text.trim()}\n</text>`;
+  const amount = settings.shortenAmount || "about a third";
+  const prompt = parts.join(list.length === 1 ? " " : "\n").replace(/\{amount\}/g, amount);
+  return prompt + `\n\n<text>\n${text.trim()}\n</text>`;
 }

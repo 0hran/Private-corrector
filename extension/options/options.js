@@ -6,6 +6,7 @@ const DEFAULTS = {
   incognito: true,
   openIn: "window",
   answerLanguage: "same",
+  shortenAmount: "about a third",
   customInstructions: ""
 };
 const FIELDS = Object.keys(DEFAULTS);

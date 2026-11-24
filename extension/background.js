@@ -6,6 +6,7 @@ const DEFAULT_SETTINGS = {
   incognito: true, // turn on Claude's incognito mode in new chats
   openIn: "window", // "window" (floating mini window) | "foreground" | "background" (tabs)
   answerLanguage: "same",
+  shortenAmount: "about a third",
   customInstructions: ""
 };
 

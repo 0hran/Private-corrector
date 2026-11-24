@@ -7,6 +7,7 @@ A Firefox extension that sends the text you select to **claude.ai**, together wi
 | **Correct (minimal changes)** | Fix spelling, grammar, agreement and punctuation without rephrasing anything; reply with the corrected text only |
 | **Reformulate** | Rewrite more clearly, keeping the meaning, tone and length; reply with the text only |
 | **Make it more academic** | Rewrite in a formal research-paper style without inventing facts or citations; reply with the text only |
+| **Shorten** | Reduce the text (by about a third by default; adjustable in the settings) while keeping the key ideas, facts and conclusions; reply with the text only |
 | **Convert to British English** | British spelling, vocabulary and punctuation (colour, organise, flat, 'single quotes'); nothing else changed; non-English text is translated |
 | **Convert to American English** | American spelling, vocabulary and punctuation (color, organize, apartment, "double quotes"); nothing else changed; non-English text is translated |
 | **Develop / provide content** | Expand the ideas with explanations, arguments and examples |
@@ -29,7 +30,7 @@ A Firefox extension that sends the text you select to **claude.ai**, together wi
 Claude re-reads the whole chat at each message, so close the window now and then: a long chat uses up your usage limits faster and mixes in your earlier texts. Incognito can be turned off in the settings.
 
 **Combining functions.** In the toolbar popup, click several functions to select them (they turn orange with a ✓), then click **Send to Claude**. Everything goes to Claude in a single prompt:
-- several rewriting functions (Correct, Reformulate, Academic, British or American English) are applied together to give **one** rewritten text, for example *Correct + British English* or *Academic + American English*;
+- several rewriting functions (Correct, Reformulate, Academic, Shorten, British or American English) are applied together to give **one** rewritten text, for example *Correct + British English* or *Academic + American English*;
 - the other functions (Develop, Papers, Explain, Ask) each get their own section in the answer, after the rewritten text.
 
 British and American English can't be selected together. Your choice is remembered for next time. Double-click a function to send it alone right away. From the right-click menu, **Combine several functions…** opens the popup with your selection already in it.
@@ -68,6 +69,7 @@ The extension makes **no network requests**. It only opens your Claude page and 
 - Use Claude incognito chats (on by default).
 - Open the Claude page in a floating mini window (default), a tab, or a background tab.
 - Language of answers for Develop, Papers, Explain and Ask. By default it follows the language of the text.
+- How much **Shorten** reduces the text: about a quarter, a third (default), half, or as much as possible.
 - Personal instructions added to every prompt.
 - Advanced: the address used to start a new chat (keep `https://claude.ai/new` for incognito, which is not available inside projects).
 
