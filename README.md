@@ -15,17 +15,15 @@ A Firefox extension that sends the text you select to **claude.ai**, together wi
 
 1. Sign in to claude.ai in Firefox once.
 2. Select text on any page, then right-click, open **Private Corrector → Claude**, and choose an action.
-3. The extension puts the prompt in the message box of your **Private Corrector conversation** on claude.ai. Check it, press Send yourself, then copy Claude's answer with its copy button.
+3. The extension puts the prompt in the message box of your **Claude window**. Check it, press Send yourself, then copy Claude's answer with its copy button.
 
-**One conversation, always the same.**
-- The first time, a small floating claude.ai window opens on a new chat. When you send that first prompt, the extension saves the chat's address as your Private Corrector conversation and shows a notification.
-- **Rename the chat "Private Corrector" once** in claude.ai (chat title menu, then Rename) so you can recognise it in your chat list. The extension finds the chat by its address, so the name is just for you.
-- From then on, every action brings that window to the front and goes back to this conversation, even if you opened another chat in the window in the meantime. Nothing else piles up: no new windows, tabs or chats.
-- If you close the window, or after a Firefox restart, the next action reopens the same conversation (or reuses a tab that already shows it).
-- If you delete the conversation on claude.ai, the next action starts a new one and saves it the same way.
-- In the settings you can see the saved address, paste the address of another chat to use instead, or click **Forget** to start a fresh one.
+**Incognito, one window.**
+- The first time (or after you close the window), a small floating claude.ai window opens on a new chat. The extension turns on Claude's **incognito mode** (the ghost icon), so the chat is kept out of your Claude history and memory.
+- While the window stays open, every action brings it to the front and fills in the prompt in that same incognito chat. No new windows, tabs or chats pile up.
+- Closing the window erases the incognito chat. The next action starts a fresh one.
+- If the extension can't turn incognito on (for example after a claude.ai redesign), a notification asks you to click the ghost icon at the top right before you press Send.
 
-Claude re-reads the whole conversation at each message, so a very long Private Corrector conversation uses up your usage limits faster and mixes in your earlier texts. Click **Forget** in the settings now and then to start a fresh one.
+Claude re-reads the whole chat at each message, so close the window now and then: a long chat uses up your usage limits faster and mixes in your earlier texts. Incognito can be turned off in the settings.
 
 Keyboard shortcuts: `Alt+Shift+C` (correct) and `Alt+Shift+A` (ask). You can change them in `about:addons`: click the gear icon, then **Manage Extension Shortcuts**.
 
@@ -46,7 +44,7 @@ A temporary add-on is removed when Firefox restarts. To install it permanently, 
 |---|---|
 | `menus` | Adds the right-click entry, shown only when text is selected |
 | `activeTab` + `scripting` | Reads your selection **only at the moment you click an action or use a shortcut**, in that tab only. No script runs on the pages you visit. |
-| Access to `claude.ai` | Fills in the message box of the Claude page the extension opened (it never presses Send and never reads your chats) |
+| Access to `claude.ai` | In the Claude window the extension opened: clicks the incognito (ghost) icon on new chats and fills in the message box. It never presses Send and never reads your chats. |
 | `clipboardWrite` | Copies the prompt (it never reads the clipboard) |
 | `notifications` | Tells you when you need to paste the prompt yourself |
 | `storage` | Saves your settings |
@@ -55,10 +53,10 @@ The extension makes **no network requests**. It only opens your Claude page and 
 
 ## Settings
 
-- The Private Corrector conversation: saved automatically; you can paste another chat's address or click Forget to start a new one.
+- Use Claude incognito chats (on by default).
 - Open the Claude page in a floating mini window (default), a tab, or a background tab.
 - Language of answers for Develop, Papers and Ask. By default it follows the language of the text.
 - Personal instructions added to every prompt.
-- Advanced: the address used to start the conversation, for example a Claude project page so it is created in that project.
+- Advanced: the address used to start a new chat (keep `https://claude.ai/new` for incognito, which is not available inside projects).
 
 To change the wording of an action's instructions, edit `extension/common/actions.js`, then click **Reload** in `about:debugging`.

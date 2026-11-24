@@ -16,14 +16,11 @@
       <button id="grant" class="btn primary">Allow</button>
     </section>
 
-    <label for="pcChatUrl">Private Corrector conversation</label>
-    <div class="row">
-      <input id="pcChatUrl" type="text" spellcheck="false" placeholder="Saved automatically after your first prompt">
-      <button id="forget" class="btn" type="button">Forget</button>
-    </div>
-    <p class="hint">Every prompt goes into this one conversation, whatever the Claude page is showing. It is saved automatically when you send your first prompt.
-      You can also paste the address of an existing chat (https://claude.ai/chat/…). <strong>Forget</strong> starts a fresh one at the next action;
-      do that from time to time, because Claude re-reads the whole conversation at each message, which uses up your usage limits faster.</p>
+    <label class="check"><input id="incognito" type="checkbox"> Use Claude incognito chats</label>
+    <p class="hint">When the Claude window opens, the extension starts a new chat and turns on incognito (ghost icon): the chat is not saved in your Claude history or memory.
+      While the window stays open, every prompt goes into that same chat. Closing the window erases it, and the next action starts a new one.
+      Close it from time to time: Claude re-reads the whole chat at each message, which uses up your usage limits faster.
+      Incognito is not available for chats inside a project.</p>
 
     <label for="openIn">Open the Claude page</label>
     <select id="openIn">
@@ -51,7 +48,7 @@
       <summary>Advanced</summary>
       <label for="newChatUrl">Address used to start a new chat</label>
       <input id="newChatUrl" type="text" spellcheck="false">
-      <p class="hint">For example a Claude project's page, so that new chats are created in that project.</p>
+      <p class="hint">Leave it as https://claude.ai/new for incognito chats.</p>
     </details>
 
     <div class="row actions">

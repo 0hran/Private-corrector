@@ -3,7 +3,7 @@
 
 const DEFAULT_SETTINGS = {
   newChatUrl: "https://claude.ai/new",
-  pcChatUrl: "", // address of the "Private Corrector" conversation, saved automatically
+  incognito: true, // turn on Claude's incognito mode in new chats
   openIn: "window", // "window" (floating mini window) | "foreground" | "background" (tabs)
   answerLanguage: "same",
   customInstructions: ""
@@ -67,90 +67,87 @@ async function run(action, text, tab, frames) {
   }
 }
 
-/* ---------- Sending to the Private Corrector conversation ---------- */
+/* ---------- Sending to the Claude window (incognito chat) ---------- */
 
 /*
  * Build the prompt, copy it (as a backup), then put it in the message box of the
- * dedicated "Private Corrector" conversation on claude.ai. The extension always goes
- * back to that conversation, whatever the Claude page is showing.
- * The conversation is recognised by its address (saved in pcChatUrl). Until it exists,
- * a new chat is opened, and its address is saved as soon as you send the first prompt.
- * The prompt is only filled in: you press Send yourself.
+ * Claude window. One window is reused: while it stays open, every prompt goes into
+ * the chat it shows. When a new window is opened, the extension starts a new chat and
+ * turns on Claude's incognito mode (ghost icon), so nothing is kept in your history.
+ * Closing the window ends the incognito chat. You press Send yourself.
  */
 async function sendToClaude(action, text, question) {
   const settings = await getSettings();
   const prompt = pcBuildPrompt(action, text, settings, question);
   await copyToClipboard(prompt);
 
-  const chatUrl = settings.pcChatUrl;
-  const target = chatUrl || settings.newChatUrl;
-  let tab = (await getClaudeTab()) || (chatUrl && (await findOpenTab(chatUrl)));
-
+  let tab = await getClaudeTab();
+  let fresh = false;
   if (!tab) {
-    tab = await openClaudePage(settings, target);
-    await waitForLoad(tab.id);
+    tab = await openClaudePage(settings, settings.newChatUrl);
+    fresh = true;
   } else {
-    await browser.storage.session.set({ claudeTabId: tab.id });
     await focusTab(tab);
-    if (!chatUrl || !sameChat(tab.url, chatUrl)) {
-      await browser.tabs.update(tab.id, { url: target });
-      await waitForLoad(tab.id);
-    }
-  }
-
-  if (chatUrl) {
-    // If the conversation no longer exists, claude.ai sends us elsewhere: start a new one.
-    const now = await browser.tabs.get(tab.id);
-    if (!sameChat(now.url, chatUrl)) {
-      await browser.storage.local.remove("pcChatUrl");
+    if (!/^https:\/\/claude\.ai\//.test(tab.url || "")) {
       await browser.tabs.update(tab.id, { url: settings.newChatUrl });
-      await waitForLoad(tab.id);
-      await armCapture(tab.id);
-      notify("The Private Corrector conversation could not be found, so a new one is being started.");
+      fresh = true;
     }
-  } else {
-    await armCapture(tab.id);
   }
-
+  if (fresh) {
+    await waitForLoad(tab.id);
+    if (settings.incognito) {
+      const state = await turnOnIncognito(tab.id);
+      if (state !== "on") {
+        notify(
+          state === "clicked"
+            ? "Check that the chat is in incognito mode (ghost icon) before you press Send."
+            : "Could not turn on incognito automatically: click the ghost icon at the top right before you press Send."
+        );
+      }
+    }
+  }
   return { filled: await fillPrompt(tab.id, prompt) };
 }
 
-function chatKey(url) {
+/* Click the ghost icon of a new chat. Returns "on", "clicked" (not confirmed) or "notfound". */
+async function turnOnIncognito(tabId) {
   try {
-    const u = new URL(url);
-    return u.origin + u.pathname.replace(/\/$/, "");
-  } catch (_) {
-    return "";
+    const [res] = await browser.scripting.executeScript({
+      target: { tabId },
+      func: async () => {
+        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+        const isOn = () =>
+          Boolean(
+            document.querySelector('[aria-label*="incognito" i][aria-pressed="true"], [data-testid*="incognito" i][aria-pressed="true"]') ||
+              [...document.querySelectorAll("header *, [role=banner] *, main *")].some(
+                (el) => el.childElementCount === 0 && /^\s*incognito chat\s*$/i.test(el.textContent)
+              )
+          );
+        const find = () =>
+          document.querySelector('button[aria-label*="incognito" i], [role=button][aria-label*="incognito" i], button[data-testid*="incognito" i]');
+        let btn = null;
+        for (let i = 0; i < 50 && !btn; i++) {
+          if (isOn()) return "on";
+          btn = find();
+          if (!btn) await sleep(200); // the page may still be starting
+        }
+        if (!btn) return "notfound";
+        btn.click();
+        for (let i = 0; i < 15; i++) {
+          await sleep(200);
+          if (isOn()) return "on";
+        }
+        return "clicked";
+      }
+    });
+    return (res && res.result) || "notfound";
+  } catch (err) {
+    console.warn("Private Corrector: could not turn on incognito", err);
+    return "notfound";
   }
 }
 
-function sameChat(a, b) {
-  return Boolean(a && b) && chatKey(a) === chatKey(b);
-}
-
-/* After a Firefox restart, reuse a tab already showing the conversation. */
-async function findOpenTab(chatUrl) {
-  const tabs = await browser.tabs.query({ url: "https://claude.ai/*" });
-  return tabs.find((t) => sameChat(t.url, chatUrl)) || null;
-}
-
-/* Wait for the new chat to get its address (when you send the first prompt), then save it. */
-async function armCapture(tabId) {
-  await browser.storage.session.set({ captureTabId: tabId });
-}
-
-browser.tabs.onUpdated.addListener(async (tabId, change) => {
-  if (!change.url) return;
-  const m = change.url.match(/^https:\/\/claude\.ai\/chat\/[0-9a-f-]{16,}/i);
-  if (!m) return;
-  const { captureTabId } = await browser.storage.session.get("captureTabId");
-  if (tabId !== captureTabId) return;
-  await browser.storage.session.remove("captureTabId");
-  await browser.storage.local.set({ pcChatUrl: m[0] });
-  notify('This chat is now your Private Corrector conversation. Rename it "Private Corrector" in claude.ai (chat title menu → Rename) so you can find it easily.');
-});
-
-/* The Claude page opened by the extension, if it is still open. */
+/* The Claude window opened by the extension, if it is still open. */
 async function getClaudeTab() {
   const { claudeTabId } = await browser.storage.session.get("claudeTabId");
   if (claudeTabId == null) return null;
