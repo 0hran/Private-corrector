@@ -30,3 +30,5 @@ input[type=radio] { accent-color: var(--accent); }
 .task label.check { margin: 4px 0 0; font-weight: 500; }
 .btn.danger { color: #b3261e; }
 [hidden] { display: none !important; }
+.chatrow { margin-top: 8px; }
+.pname { width: 72px; flex: none; font-weight: 600; font-size: 14px; }

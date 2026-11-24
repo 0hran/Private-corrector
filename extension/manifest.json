@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Private Corrector",
-  "version": "4.0.0",
-  "description": "Select text and send it to claude.ai to correct it with minimal changes, reformulate it, make it academic, develop it, find research papers or ask anything.",
+  "version": "5.0.0",
+  "description": "Select text and send it to Claude, ChatGPT or Gemini to correct it with minimal changes, reformulate, shorten, make it academic, explain, find research papers or run your own saved prompts.",
   "icons": {
     "48": "icons/icon.svg",
     "96": "icons/icon.svg"
@@ -12,14 +12,32 @@
       "id": "private-corrector@local",
       "strict_min_version": "128.0",
       "data_collection_permissions": {
-        "required": ["none"]
+        "required": [
+          "none"
+        ]
       }
     }
   },
-  "permissions": ["menus", "activeTab", "scripting", "storage", "clipboardWrite", "clipboardRead", "notifications"],
-  "host_permissions": ["https://claude.ai/*"],
+  "permissions": [
+    "menus",
+    "activeTab",
+    "scripting",
+    "storage",
+    "clipboardWrite",
+    "clipboardRead",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://claude.ai/*",
+    "https://chatgpt.com/*",
+    "https://gemini.google.com/*"
+  ],
   "background": {
-    "scripts": ["common/actions.js", "background.js"]
+    "scripts": [
+      "common/actions.js",
+      "common/providers.js",
+      "background.js"
+    ]
   },
   "action": {
     "default_title": "Private Corrector",
@@ -32,12 +50,16 @@
   },
   "commands": {
     "correct-selection": {
-      "suggested_key": { "default": "Alt+Shift+C" },
-      "description": "Send the selected text to Claude for a minimal correction"
+      "suggested_key": {
+        "default": "Alt+Shift+C"
+      },
+      "description": "Send the selected text for a minimal correction"
     },
     "ask-selection": {
-      "suggested_key": { "default": "Alt+Shift+A" },
-      "description": "Ask Claude about the selected text"
+      "suggested_key": {
+        "default": "Alt+Shift+A"
+      },
+      "description": "Ask a question about the selected text"
     }
   }
 }

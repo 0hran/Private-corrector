@@ -34,4 +34,4 @@ textarea { width: 100%; background: var(--soft); border: 1px solid var(--border)
 .ask { flex-direction: column; }
 .ok { color: #2e7d32; }
 .dest { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; }
-.dest select { flex: 1; font: inherit; color: inherit; background: var(--soft); border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; }
+.dest select { flex: 1; min-width: 0; font: inherit; color: inherit; background: var(--soft); border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; }

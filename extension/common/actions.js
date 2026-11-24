@@ -119,7 +119,7 @@ var PC_ACTIONS = [
   {
     id: "ask",
     section: "Answer to my question",
-    title: "Ask Claude…",
+    title: "Ask a question…",
     rewrite: false,
     needsQuestion: true,
     instructions: "" // replaced by the user's question

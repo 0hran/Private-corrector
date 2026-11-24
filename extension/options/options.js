@@ -2,28 +2,61 @@
 
 const $ = (id) => document.getElementById(id);
 const DEFAULTS = {
-  newChatUrl: "https://claude.ai/new",
-  chatUrl: "",
+  provider: "claude",
   openIn: "window",
   answerLanguage: "same",
   shortenAmount: "about a third",
   customInstructions: ""
 };
 const FIELDS = Object.keys(DEFAULTS);
-const CHAT_RE = /^https:\/\/claude\.ai\/chat\/[0-9a-f-]+/i;
-
 let tasks = [];
+
+/* ---------- Default chat for each AI ---------- */
+
+function buildChatRows() {
+  const box = $("chats");
+  for (const [id, p] of Object.entries(PC_PROVIDERS)) {
+    const row = document.createElement("div");
+    row.className = "row chatrow";
+    const name = document.createElement("span");
+    name.className = "pname";
+    name.textContent = p.name;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.spellcheck = false;
+    input.id = "chat-" + id;
+    input.placeholder = p.chatExample;
+    const btn = document.createElement("button");
+    btn.className = "btn";
+    btn.type = "button";
+    btn.textContent = "Use the open chat";
+    btn.addEventListener("click", async () => {
+      const url = await browser.runtime.sendMessage({ type: "pc-current-chat", provider: id });
+      if (!url) {
+        return status(`✗ No ${p.name} chat is open. Open the chat you want (a saved chat, not a private one), then try again.`);
+      }
+      input.value = url;
+      status(`${p.name} chat found. Click Save to keep it.`);
+    });
+    row.append(name, input, btn);
+    box.appendChild(row);
+  }
+}
+buildChatRows();
 
 /* ---------- Load / save ---------- */
 
 function fill(s) {
   for (const k of FIELDS) $(k).value = s[k];
-  const dest = s.destination === "chat" ? "chat" : "incognito";
+  const dest = s.destination === "chat" ? "chat" : "private";
   document.querySelector(`input[name=destination][value=${dest}]`).checked = true;
+  const urls = { claude: s.chatUrl || "", ...(s.chatUrls || {}) };
+  for (const id of Object.keys(PC_PROVIDERS)) $("chat-" + id).value = urls[id] || "";
 }
 
 async function load() {
-  const s = { ...DEFAULTS, destination: "incognito", customTasks: [], ...(await browser.storage.local.get(null)) };
+  const s = { ...DEFAULTS, destination: "private", customTasks: [], ...(await browser.storage.local.get(null)) };
+  if (!PC_PROVIDERS[s.provider]) s.provider = "claude";
   fill(s);
   tasks = s.customTasks || [];
   renderTasks();
@@ -36,38 +69,30 @@ function status(msg) {
 $("save").addEventListener("click", async () => {
   const s = {};
   for (const k of FIELDS) s[k] = $(k).value.trim();
-  if (!s.newChatUrl) s.newChatUrl = DEFAULTS.newChatUrl;
   s.destination = document.querySelector("input[name=destination]:checked").value;
-  if (s.chatUrl && !CHAT_RE.test(s.chatUrl)) {
-    return status("✗ The default chat address must look like https://claude.ai/chat/…");
+  s.chatUrls = {};
+  for (const [id, p] of Object.entries(PC_PROVIDERS)) {
+    const url = $("chat-" + id).value.trim();
+    if (!url) continue;
+    if (!p.chatRe.test(url)) return status(`✗ The ${p.name} chat address must look like ${p.chatExample}`);
+    s.chatUrls[id] = url;
   }
-  if (s.destination === "chat" && !s.chatUrl) {
-    return status("✗ Choose your default chat first (or select Incognito chat).");
+  if (s.destination === "chat" && !s.chatUrls[s.provider]) {
+    return status(`✗ Choose a default chat for ${PC_PROVIDERS[s.provider].name} first (or select Private chat).`);
   }
   const bad = tasks.find((t) => !t.title.trim() || !t.prompt.trim());
   if (bad) return status("✗ Each saved task needs a name and an instruction.");
   s.customTasks = tasks.map((t) => ({ ...t, title: t.title.trim(), prompt: t.prompt.trim() }));
   await browser.storage.local.set(s);
+  await browser.storage.local.remove(["chatUrl", "newChatUrl", "incognito"]); // older versions
   status("Saved ✓");
 });
 
 $("reset").addEventListener("click", async () => {
   // Saved tasks are kept.
-  await browser.storage.local.remove([...FIELDS, "destination", "incognito", "pcChatUrl", "urlTemplate", "conversation"]);
-  fill({ ...DEFAULTS, destination: "incognito" });
+  await browser.storage.local.remove([...FIELDS, "destination", "chatUrls", "chatUrl", "newChatUrl", "incognito", "pcChatUrl", "urlTemplate", "conversation"]);
+  fill({ ...DEFAULTS, destination: "private", chatUrls: {} });
   status("Defaults restored ✓ (your saved tasks are kept)");
-});
-
-/* ---------- Default chat ---------- */
-
-$("useOpenChat").addEventListener("click", async () => {
-  const url = await browser.runtime.sendMessage({ type: "pc-current-chat" });
-  if (!url) {
-    return status("✗ No claude.ai chat is open. Open the chat you want (it must be a saved chat, not incognito), then try again.");
-  }
-  $("chatUrl").value = url;
-  document.querySelector("input[name=destination][value=chat]").checked = true;
-  status("Chat found. Click Save to keep it.");
 });
 
 /* ---------- Saved tasks ---------- */
@@ -106,7 +131,7 @@ function renderTasks() {
 
     const prompt = document.createElement("textarea");
     prompt.rows = 3;
-    prompt.placeholder = "Instruction for Claude, e.g. Turn this into a polite, concise email.";
+    prompt.placeholder = "Instruction for the AI, e.g. Turn this into a polite, concise email.";
     prompt.value = t.prompt;
     prompt.addEventListener("input", () => (t.prompt = prompt.value));
 
@@ -132,7 +157,7 @@ $("addTask").addEventListener("click", () => {
 
 /* ---------- Permission ---------- */
 
-const ORIGINS = { origins: ["https://claude.ai/*"] };
+const ORIGINS = { origins: Object.values(PC_PROVIDERS).map((p) => p.match) };
 async function checkPermission() {
   $("perm").hidden = await browser.permissions.contains(ORIGINS);
 }

@@ -7,6 +7,20 @@ const SELECTED_KEY = "pc-popup-selected";
 let customTasks = [];
 let allActions = PC_ACTIONS;
 let selected = new Set();
+let chatUrls = {};
+let wantedDestination = "private";
+
+/* "Private chat" is named after each AI; "My default chat" needs a chat saved in the settings. */
+function updateDestination() {
+  const id = $("provider").value;
+  const p = pcProvider(id);
+  const priv = $("destination").querySelector('option[value="private"]');
+  const chat = $("destination").querySelector('option[value="chat"]');
+  priv.textContent = p.privateName.charAt(0).toUpperCase() + p.privateName.slice(1);
+  chat.disabled = !chatUrls[id];
+  chat.textContent = chatUrls[id] ? "My default chat" : "My default chat (set it in the settings)";
+  $("destination").value = chatUrls[id] && wantedDestination === "chat" ? "chat" : "private";
+}
 
 /* ---------- Text ---------- */
 
@@ -121,7 +135,8 @@ function refresh() {
   $("ask").hidden = !selected.has("ask");
   const n = selected.size;
   $("go").disabled = n === 0;
-  $("go").textContent = n > 1 ? `Send ${n} combined functions to Claude` : "Send to Claude";
+  const name = pcProvider($("provider").value).name;
+  $("go").textContent = n > 1 ? `Send ${n} combined functions to ${name}` : `Send to ${name}`;
   try {
     localStorage.setItem(SELECTED_KEY, JSON.stringify([...selected]));
   } catch (_) {}
@@ -193,7 +208,7 @@ async function send() {
   if (!selected.size) return error("Select at least one function.");
   if (selected.has("ask") && !$("question").value.trim()) {
     $("question").focus();
-    return error("Type your question for “Ask Claude…”.");
+    return error("Type your question for “Ask a question…”.");
   }
   // Keep the order of the list, whatever the order of the clicks.
   const actionIds = allActions.filter((a) => selected.has(a.id)).map((a) => a.id);
@@ -202,10 +217,11 @@ async function send() {
     actionIds,
     text,
     question: $("question").value.trim(),
+    provider: $("provider").value,
     destination: $("destination").value
   });
   if (res && !res.filled) {
-    error("The prompt is on your clipboard: click in Claude's message box and press Ctrl+V.");
+    error(`The prompt is on your clipboard: click in ${res.name}'s message box and press Ctrl+V.`);
   } else {
     window.close();
   }
@@ -214,13 +230,17 @@ async function send() {
 /* ---------- Start ---------- */
 
 (async () => {
-  const s = await browser.storage.local.get({ customTasks: [], destination: "incognito", chatUrl: "" });
+  const s = await browser.storage.local.get({ customTasks: [], provider: "claude", destination: "private", chatUrls: {}, chatUrl: "" });
   customTasks = s.customTasks || [];
-  // "Send to" starts on your default; "My default chat" needs a chat saved in the settings.
-  const chatOption = $("destination").querySelector('option[value="chat"]');
-  chatOption.disabled = !s.chatUrl;
-  if (!s.chatUrl) chatOption.textContent = "My default chat (set it in the settings)";
-  $("destination").value = s.chatUrl && s.destination === "chat" ? "chat" : "incognito";
+  chatUrls = { claude: s.chatUrl || undefined, ...s.chatUrls };
+  // "Send to" starts on your defaults.
+  $("provider").value = PC_PROVIDERS[s.provider] ? s.provider : "claude";
+  wantedDestination = s.destination === "chat" ? "chat" : "private";
+  updateDestination();
+  $("provider").addEventListener("change", () => {
+    updateDestination();
+    refresh();
+  });
   try {
     selected = new Set(JSON.parse(localStorage.getItem(SELECTED_KEY) || "[]"));
   } catch (_) {}

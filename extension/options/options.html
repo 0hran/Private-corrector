@@ -8,38 +8,42 @@
 <body>
   <main>
     <h1><span class="logo"></span> Private Corrector settings</h1>
-    <p class="hint">The extension puts your selected text and the instructions for the action in the message box of a Claude page. You press Send yourself.
-      It uses your normal Claude account (Free, Pro or Max): no API key, no extra cost. Make sure you are signed in to claude.ai in Firefox.</p>
+    <p class="hint">The extension puts your selected text and the instructions for the action in the message box of Claude, ChatGPT or Gemini. You press Send yourself.
+      It uses your normal account on that site (free or paid): no API key, no extra cost.</p>
 
     <section id="perm" class="warn" hidden>
-      Firefox has not allowed this extension to fill in the message box on claude.ai yet.
+      Firefox has not yet allowed this extension to fill in the message box on <span id="permSites">the AI sites</span>.
       <button id="grant" class="btn primary">Allow</button>
     </section>
 
     <h2>Where prompts go</h2>
-    <label class="check"><input type="radio" name="destination" value="incognito"> Incognito chat (default)</label>
-    <p class="hint">The extension starts a new chat and turns on Claude's incognito mode (ghost icon): nothing is saved in your Claude history or memory.
-      While the Claude window stays open, every prompt goes into that same chat. Closing the window erases it.</p>
+    <label for="provider">AI assistant</label>
+    <select id="provider">
+      <option value="claude">Claude (claude.ai)</option>
+      <option value="chatgpt">ChatGPT (chatgpt.com)</option>
+      <option value="gemini">Gemini (gemini.google.com)</option>
+    </select>
+    <p class="hint">Make sure you are signed in to it in Firefox. You can pick another one for a single prompt in the toolbar popup (<em>Send to</em>).</p>
+
+    <label class="check"><input type="radio" name="destination" value="private"> Private chat (default)</label>
+    <p class="hint">A new chat that is not saved in your history: Claude's <em>incognito chat</em>, ChatGPT's or Gemini's <em>temporary chat</em>.
+      While the AI window stays open, every prompt goes into that same chat. Closing the window ends it.</p>
 
     <label class="check"><input type="radio" name="destination" value="chat"> My default chat</label>
-    <p class="hint">Every prompt goes into one Claude chat that you choose. The window always goes back to it, whatever it is showing. The chat is kept in your history.</p>
-    <div class="row">
-      <input id="chatUrl" type="text" spellcheck="false" placeholder="https://claude.ai/chat/…">
-      <button id="useOpenChat" class="btn" type="button">Use the chat open in Claude</button>
-    </div>
-    <p class="hint">Open the chat you want on claude.ai (in the Claude window or any tab), then click <strong>Use the chat open in Claude</strong>. Or paste its address.
-      You can also switch between the two destinations for a single prompt in the toolbar popup (<em>Send to</em>).
-      In either case, Claude re-reads the whole chat at each message, so a long chat uses up your usage limits faster.</p>
+    <p class="hint">Every prompt goes into one chat that you choose for each AI, kept in your history. The window always goes back to it.
+      Open the chat you want, then click <strong>Use the open chat</strong> next to that AI (or paste its address). If an AI has no default chat, its private chat is used.</p>
+    <div id="chats"></div>
+    <p class="hint">A long chat uses up your usage limits faster (the AI re-reads it at each message): start a fresh one from time to time.</p>
 
     <h2>My saved tasks</h2>
     <p class="hint">Your own prompts, available in the right-click menu (★) and the toolbar popup, where they can be combined with the other functions.
-      Write the instruction as you would to Claude, for example “Make this email more polite and concise”.
+      Write the instruction as you would to the AI, for example “Make this email more polite and concise”.
       Tick <em>Reply with the text only</em> when the task transforms the text (so the result can be copied directly).</p>
     <div id="tasks"></div>
     <button id="addTask" class="btn" type="button">＋ Add a task</button>
 
     <h2>Other settings</h2>
-    <label for="openIn">Open the Claude page</label>
+    <label for="openIn">Open the AI page</label>
     <select id="openIn">
       <option value="window">In a small floating window</option>
       <option value="foreground">In a new tab, and switch to it</option>
@@ -69,12 +73,6 @@
     <label for="customInstructions">Personal instructions (optional, added to every prompt)</label>
     <textarea id="customInstructions" rows="3" placeholder="e.g. I write in British English. My field is molecular biology."></textarea>
 
-    <details>
-      <summary>Advanced</summary>
-      <label for="newChatUrl">Address used to start a new chat</label>
-      <input id="newChatUrl" type="text" spellcheck="false">
-      <p class="hint">Used to start incognito chats. Leave it as https://claude.ai/new (incognito is not available inside projects).</p>
-    </details>
 
     <div class="row actions">
       <button id="save" class="btn primary">Save</button>
@@ -82,6 +80,7 @@
       <span id="status" class="status"></span>
     </div>
   </main>
+  <script src="../common/providers.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

@@ -1,10 +1,10 @@
-/* Background script: reads the selection, builds the prompt, opens claude.ai. */
+/* Background script: reads the selection, builds the prompt, fills it in on Claude, ChatGPT or Gemini. */
 "use strict";
 
 const DEFAULT_SETTINGS = {
-  destination: "incognito", // "incognito" (default) | "chat" (the chat saved in chatUrl)
-  chatUrl: "", // your default Claude chat, e.g. https://claude.ai/chat/…
-  newChatUrl: "https://claude.ai/new",
+  provider: "claude", // "claude" | "chatgpt" | "gemini"
+  destination: "private", // "private" (incognito / temporary chat, default) | "chat" (your default chat)
+  chatUrls: {}, // your default chat for each provider: { claude: "https://claude.ai/chat/…", … }
   openIn: "window", // "window" (floating mini window) | "foreground" | "background" (tabs)
   answerLanguage: "same",
   shortenAmount: "about a third",
@@ -13,20 +13,25 @@ const DEFAULT_SETTINGS = {
 };
 
 async function getSettings() {
-  return { ...DEFAULT_SETTINGS, ...(await browser.storage.local.get(DEFAULT_SETTINGS)) };
+  const s = { ...DEFAULT_SETTINGS, ...(await browser.storage.local.get(null)) };
+  // Settings from earlier versions.
+  if (s.destination === "incognito") s.destination = "private";
+  if (s.chatUrl && !s.chatUrls.claude) s.chatUrls = { ...s.chatUrls, claude: s.chatUrl };
+  if (!PC_PROVIDERS[s.provider]) s.provider = "claude";
+  return s;
 }
 
 /* ---------- Context menu ---------- */
 
 async function createMenus() {
-  const { customTasks } = await getSettings();
+  const s = await getSettings();
   await browser.menus.removeAll();
   const ctx = ["selection"];
-  browser.menus.create({ id: "pc-root", title: "Private Corrector → Claude", contexts: ctx });
+  browser.menus.create({ id: "pc-root", title: `Private Corrector → ${pcProvider(s.provider).name}`, contexts: ctx });
   for (const action of PC_ACTIONS) {
     browser.menus.create({ id: "pc-" + action.id, parentId: "pc-root", title: action.title, contexts: ctx });
   }
-  const mine = pcCustomToActions(customTasks);
+  const mine = pcCustomToActions(s.customTasks);
   if (mine.length) {
     browser.menus.create({ id: "pc-sep-mine", parentId: "pc-root", type: "separator", contexts: ctx });
     for (const action of mine) {
@@ -38,9 +43,9 @@ async function createMenus() {
 }
 createMenus();
 
-// Rebuild the menu when saved tasks change.
+// Rebuild the menu when saved tasks or the AI change.
 browser.storage.onChanged.addListener((changes, area) => {
-  if (area === "local" && changes.customTasks) createMenus();
+  if (area === "local" && (changes.customTasks || changes.provider)) createMenus();
 });
 
 browser.menus.onClicked.addListener(async (info, tab) => {
@@ -71,19 +76,20 @@ browser.commands.onCommand.addListener(async (command) => {
 });
 
 browser.runtime.onMessage.addListener(async (msg) => {
-  // From the popup: { type: "pc-send", actionIds: [...], text, question, destination }
+  // From the popup: { type: "pc-send", actionIds: [...], text, question, provider, destination }
   if (msg && msg.type === "pc-send") {
     const { customTasks } = await getSettings();
     const actions = (msg.actionIds || []).map((id) => pcGetAction(id, customTasks)).filter(Boolean);
-    return sendToClaude(actions, msg.text, msg.question, msg.destination);
+    return sendToAI(actions, msg.text, msg.question, { provider: msg.provider, destination: msg.destination });
   }
-  // From the settings page: address of the chat shown in the Claude window.
+  // From the settings page: address of a chat open for this provider.
   if (msg && msg.type === "pc-current-chat") {
-    const tab = await getClaudeTab();
-    if (tab && /^https:\/\/claude\.ai\/chat\//.test(tab.url || "")) return chatKey(tab.url);
-    const tabs = await browser.tabs.query({ url: "https://claude.ai/chat/*" });
+    const p = pcProvider(msg.provider);
+    const own = await getAiTab();
+    if (own && p.chatRe.test(own.url || "")) return own.url.match(p.chatRe)[0];
+    const tabs = (await browser.tabs.query({ url: p.match })).filter((t) => p.chatRe.test(t.url || ""));
     const best = tabs.find((t) => t.active) || tabs[0];
-    return best ? chatKey(best.url) : "";
+    return best ? best.url.match(p.chatRe)[0] : "";
   }
 });
 
@@ -96,79 +102,84 @@ async function run(action, text, tab, frames) {
     question = await askQuestion(tab, frames);
     if (question === null) return; // cancelled
   }
-  const result = await sendToClaude(action, text, question);
+  const result = await sendToAI(action, text, question);
   if (!result.filled) {
-    notify("The prompt is on your clipboard: click in Claude's message box and press Ctrl+V.");
+    notify(`The prompt is on your clipboard: click in ${result.name}'s message box and press Ctrl+V.`);
   }
 }
 
-/* ---------- Sending to the Claude window ---------- */
+/* ---------- Sending to the AI window ---------- */
 
 /*
- * Build the prompt, copy it (as a backup), then put it in the message box of the
- * Claude window. One window is reused. Two destinations:
- *  - "incognito" (default): a new chat with Claude's incognito mode turned on (ghost
- *    icon), reused while the window stays open; closing the window erases it.
- *  - "chat": your default chat (chatUrl); the window always goes back to it.
+ * Build the prompt, copy it (as a backup), then put it in the message box of the AI
+ * window. One window is reused for everything. Two destinations:
+ *  - "private" (default): a new incognito / temporary chat, reused while the window
+ *    stays open; closing the window ends it.
+ *  - "chat": your default chat for that AI; the window always goes back to it.
  * You press Send yourself.
  */
-async function sendToClaude(action, text, question, destinationOverride) {
+async function sendToAI(action, text, question, override = {}) {
   const settings = await getSettings();
-  let destination = destinationOverride || settings.destination;
-  if (destination === "chat" && !settings.chatUrl) destination = "incognito";
-  const mode = destination === "chat" ? "chat:" + chatKey(settings.chatUrl) : "incognito";
+  const providerId = PC_PROVIDERS[override.provider] ? override.provider : settings.provider;
+  const p = pcProvider(providerId);
+  const chatUrl = settings.chatUrls[providerId] || "";
+  let destination = override.destination || settings.destination;
+  if (destination === "chat" && !chatUrl) destination = "private";
+  const mode = providerId + ":" + (destination === "chat" ? chatKey(chatUrl) : "private");
 
   const prompt = pcBuildPrompt(action, text, settings, question);
   await copyToClipboard(prompt);
 
-  const { claudeMode } = await browser.storage.session.get("claudeMode");
-  let tab = await getClaudeTab();
-  if (!tab && destination === "chat") tab = await findOpenTab(settings.chatUrl);
+  const { aiMode } = await browser.storage.session.get("aiMode");
+  let tab = await getAiTab();
+  if (!tab && destination === "chat") tab = await findOpenTab(chatUrl);
 
   if (destination === "chat") {
-    const target = settings.chatUrl;
     if (!tab) {
-      tab = await openClaudePage(settings, target);
-      await waitForLoad(tab.id);
+      tab = await openAiPage(settings, chatUrl);
+      await waitForLoad(tab.id, p);
     } else {
       await rememberTab(tab);
       await focusTab(tab);
-      if (!sameChat(tab.url, target)) {
-        await browser.tabs.update(tab.id, { url: target });
-        await waitForLoad(tab.id);
+      if (!sameChat(tab.url, chatUrl)) {
+        await browser.tabs.update(tab.id, { url: chatUrl });
+        await waitForLoad(tab.id, p);
       }
     }
     const now = await browser.tabs.get(tab.id);
-    if (!sameChat(now.url, target)) {
-      notify("Your default Claude chat could not be opened (deleted?). Check its address in the settings before you press Send.");
+    if (!sameChat(now.url, chatUrl)) {
+      notify(`Your default ${p.name} chat could not be opened (deleted?). Check its address in the settings before you press Send.`);
     }
   } else {
-    // Incognito: reuse the incognito chat while the window stays open.
+    // Private chat: reuse it while the window stays open and nothing else was used since.
+    const start = p.privateUrl || p.newChat;
     let fresh = false;
     if (!tab) {
-      tab = await openClaudePage(settings, settings.newChatUrl);
+      tab = await openAiPage(settings, start);
       fresh = true;
     } else {
       await focusTab(tab);
-      if (claudeMode !== "incognito" || !/^https:\/\/claude\.ai\//.test(tab.url || "")) {
-        await browser.tabs.update(tab.id, { url: settings.newChatUrl });
+      if (aiMode !== mode || pcProviderOfUrl(tab.url) !== providerId) {
+        await browser.tabs.update(tab.id, { url: start });
         fresh = true;
       }
     }
     if (fresh) {
-      await waitForLoad(tab.id);
-      const state = await turnOnIncognito(tab.id);
-      if (state !== "on") {
-        notify(
-          state === "clicked"
-            ? "Check that the chat is in incognito mode (ghost icon) before you press Send."
-            : "Could not turn on incognito automatically: click the ghost icon at the top right before you press Send."
-        );
+      await waitForLoad(tab.id, p);
+      if (!p.privateUrl) {
+        const state = await turnOnPrivateChat(tab.id, p);
+        if (state !== "on") {
+          notify(
+            state === "clicked"
+              ? `Check that ${p.name} is in ${p.privateName} mode before you press Send.`
+              : `Could not start a ${p.privateName} automatically: turn it on in ${p.name} before you press Send.`
+          );
+        }
       }
     }
   }
-  await browser.storage.session.set({ claudeMode: mode });
-  return { filled: await fillPrompt(tab.id, prompt) };
+  await browser.storage.session.set({ aiMode: mode });
+  return { filled: await fillPrompt(tab.id, prompt, p.inputs), name: p.name };
 }
 
 function chatKey(url) {
@@ -186,58 +197,20 @@ function sameChat(a, b) {
 
 /* After a Firefox restart, reuse a tab that already shows the chat. */
 async function findOpenTab(chatUrl) {
-  const tabs = await browser.tabs.query({ url: "https://claude.ai/*" });
+  const tabs = await browser.tabs.query({});
   return tabs.find((t) => sameChat(t.url, chatUrl)) || null;
 }
 
 async function rememberTab(tab) {
-  await browser.storage.session.set({ claudeTabId: tab.id });
+  await browser.storage.session.set({ aiTabId: tab.id });
 }
 
-/* Click the ghost icon of a new chat. Returns "on", "clicked" (not confirmed) or "notfound". */
-async function turnOnIncognito(tabId) {
+/* The AI window opened by the extension, if it is still open. */
+async function getAiTab() {
+  const { aiTabId } = await browser.storage.session.get("aiTabId");
+  if (aiTabId == null) return null;
   try {
-    const [res] = await browser.scripting.executeScript({
-      target: { tabId },
-      func: async () => {
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        const isOn = () =>
-          Boolean(
-            document.querySelector('[aria-label*="incognito" i][aria-pressed="true"], [data-testid*="incognito" i][aria-pressed="true"]') ||
-              [...document.querySelectorAll("header *, [role=banner] *, main *")].some(
-                (el) => el.childElementCount === 0 && /^\s*incognito chat\s*$/i.test(el.textContent)
-              )
-          );
-        const find = () =>
-          document.querySelector('button[aria-label*="incognito" i], [role=button][aria-label*="incognito" i], button[data-testid*="incognito" i]');
-        let btn = null;
-        for (let i = 0; i < 50 && !btn; i++) {
-          if (isOn()) return "on";
-          btn = find();
-          if (!btn) await sleep(200); // the page may still be starting
-        }
-        if (!btn) return "notfound";
-        btn.click();
-        for (let i = 0; i < 15; i++) {
-          await sleep(200);
-          if (isOn()) return "on";
-        }
-        return "clicked";
-      }
-    });
-    return (res && res.result) || "notfound";
-  } catch (err) {
-    console.warn("Private Corrector: could not turn on incognito", err);
-    return "notfound";
-  }
-}
-
-/* The Claude window opened by the extension, if it is still open. */
-async function getClaudeTab() {
-  const { claudeTabId } = await browser.storage.session.get("claudeTabId");
-  if (claudeTabId == null) return null;
-  try {
-    return await browser.tabs.get(claudeTabId);
+    return await browser.tabs.get(aiTabId);
   } catch (_) {
     return null; // closed
   }
@@ -251,8 +224,8 @@ async function focusTab(tab) {
 const WINDOW_WIDTH = 460;
 const WINDOW_HEIGHT = 720;
 
-/* Open the Claude page: a small floating window (default) or a tab. */
-async function openClaudePage(settings, url) {
+/* Open the AI page: a small floating window (default) or a tab. */
+async function openAiPage(settings, url) {
   let tab;
   if (settings.openIn === "window") {
     let pos = {};
@@ -270,16 +243,17 @@ async function openClaudePage(settings, url) {
     tab = await browser.tabs.create({ url, active: settings.openIn !== "background" });
   }
   await rememberTab(tab);
-  await browser.storage.session.remove("claudeMode");
+  await browser.storage.session.remove("aiMode");
   return tab;
 }
 
 browser.tabs.onRemoved.addListener(async (tabId) => {
-  const { claudeTabId } = await browser.storage.session.get("claudeTabId");
-  if (tabId === claudeTabId) await browser.storage.session.remove("claudeTabId");
+  const { aiTabId } = await browser.storage.session.get("aiTabId");
+  if (tabId === aiTabId) await browser.storage.session.remove(["aiTabId", "aiMode"]);
 });
 
-function waitForLoad(tabId, timeoutMs = 20000) {
+function waitForLoad(tabId, provider, timeoutMs = 20000) {
+  const origin = provider.match.replace("/*", "");
   return new Promise((resolve) => {
     const done = () => {
       browser.tabs.onUpdated.removeListener(listener);
@@ -287,24 +261,70 @@ function waitForLoad(tabId, timeoutMs = 20000) {
       resolve();
     };
     const listener = (id, change, t) => {
-      if (id === tabId && change.status === "complete" && t.url && t.url.startsWith("https://claude.ai")) done();
+      if (id === tabId && change.status === "complete" && t.url && t.url.startsWith(origin)) done();
     };
     const timer = setTimeout(done, timeoutMs);
     browser.tabs.onUpdated.addListener(listener);
   });
 }
 
-/* Put the prompt in Claude's message box (replacing any draft). Never presses Send. */
-async function fillPrompt(tabId, prompt) {
+/* Click the incognito / temporary chat button. Returns "on", "clicked" (not confirmed) or "notfound". */
+async function turnOnPrivateChat(tabId, provider) {
   try {
     const [res] = await browser.scripting.executeScript({
       target: { tabId },
-      args: [prompt],
-      func: async (text) => {
+      args: [provider.privateButton, provider.privateLabel.source],
+      func: async (word, labelSource) => {
+        const label = new RegExp(labelSource, "i");
+        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+        const sel = (extra) =>
+          `[aria-label*="${word}" i]${extra}, [data-testid*="${word}" i]${extra}, [mattooltip*="${word}" i]${extra}`;
+        const isOn = () =>
+          Boolean(
+            document.querySelector(sel('[aria-pressed="true"]')) ||
+              document.querySelector(sel('[aria-checked="true"]')) ||
+              [...document.querySelectorAll("header *, [role=banner] *, main *, nav *")].some(
+                (el) => el.childElementCount === 0 && label.test(el.textContent)
+              )
+          );
         const find = () =>
-          document.querySelector('div.ProseMirror[contenteditable="true"]') ||
-          document.querySelector('[contenteditable="true"]') ||
-          document.querySelector("textarea");
+          [...document.querySelectorAll(sel(""))].find((el) => el.matches("button, [role=button], a") || el.closest("button"));
+        let btn = null;
+        for (let i = 0; i < 50 && !btn; i++) {
+          if (isOn()) return "on";
+          btn = find();
+          if (!btn) await sleep(200); // the page may still be starting
+        }
+        if (!btn) return "notfound";
+        (btn.closest("button") || btn).click();
+        for (let i = 0; i < 15; i++) {
+          await sleep(200);
+          if (isOn()) return "on";
+        }
+        return "clicked";
+      }
+    });
+    return (res && res.result) || "notfound";
+  } catch (err) {
+    console.warn("Private Corrector: could not start a private chat", err);
+    return "notfound";
+  }
+}
+
+/* Put the prompt in the message box (replacing any draft). Never presses Send. */
+async function fillPrompt(tabId, prompt, selectors) {
+  try {
+    const [res] = await browser.scripting.executeScript({
+      target: { tabId },
+      args: [prompt, selectors],
+      func: async (text, selectors) => {
+        const find = () => {
+          for (const s of selectors) {
+            const el = document.querySelector(s);
+            if (el) return el;
+          }
+          return null;
+        };
         let box = find();
         for (let i = 0; !box && i < 50; i++) {
           await new Promise((r) => setTimeout(r, 200)); // the page may still be starting
@@ -327,7 +347,7 @@ async function fillPrompt(tabId, prompt) {
         sel.removeAllRanges();
         sel.addRange(range);
         // Simulate a paste: the editor handles it like a normal Ctrl+V
-        // (long texts may become a "pasted text" attachment, as usual on claude.ai).
+        // (long texts may become a "pasted text" attachment, as when you paste them yourself).
         const data = new DataTransfer();
         data.setData("text/plain", text);
         const ev = new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true });
@@ -366,16 +386,16 @@ async function readSelection(tab, frameIds) {
   }
 }
 
-/* Ask the question for "Ask Claude…" with a simple dialog in the page. */
+/* Ask the question for "Ask…" with a simple dialog in the page. */
 async function askQuestion(tab, frameIds) {
   try {
     const [res] = await browser.scripting.executeScript({
       target: { tabId: tab.id, frameIds: frameIds || [0] },
-      func: () => window.prompt("Private Corrector – what do you want to ask Claude about the selected text?", "")
+      func: () => window.prompt("Private Corrector – what do you want to ask about the selected text?", "")
     });
     return res.result == null ? null : res.result.trim();
   } catch (_) {
-    return ""; // cannot show a dialog here: Claude will be asked to explain the text
+    return ""; // cannot show a dialog here: the AI will be asked to explain the text
   }
 }
 
