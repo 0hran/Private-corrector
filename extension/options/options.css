@@ -1,0 +1,34 @@
+:root { --bg: #faf9f5; --fg: #1f1e1d; --muted: #6b6a68; --border: #e3e1dc; --accent: #c96442; --soft: #ffffff; --warn: #fdf1d8; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #1f1e1d; --fg: #ecebe8; --muted: #a3a29e; --border: #3d3c39; --soft: #2a2a28; --warn: #3d3220; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 640px; margin: 0 auto; padding: 32px 16px 64px; }
+h1 { font-size: 22px; display: flex; align-items: center; gap: 10px; }
+.logo { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); display: inline-block; }
+label { display: block; font-weight: 600; margin: 22px 0 6px; }
+label.check { font-weight: 500; display: flex; gap: 8px; align-items: center; }
+input[type=password], input[type=text], select, textarea {
+  width: 100%; font: inherit; color: inherit; background: var(--soft); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row input { flex: 1; }
+.hint { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+a { color: var(--accent); }
+.btn { font: inherit; color: inherit; border: 1px solid var(--border); background: var(--soft); border-radius: 8px; padding: 7px 14px; cursor: pointer; white-space: nowrap; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.actions { margin-top: 28px; }
+.status { color: var(--muted); font-size: 14px; }
+details { margin-top: 24px; }
+summary { cursor: pointer; color: var(--muted); }
+.warn { background: var(--warn); border-radius: 8px; padding: 12px; margin-top: 16px; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+h2 { font-size: 17px; margin: 36px 0 4px; padding-top: 12px; border-top: 1px solid var(--border); }
+input[type=radio] { accent-color: var(--accent); }
+.task { border: 1px solid var(--border); background: var(--soft); border-radius: 10px; padding: 12px; margin: 12px 0; }
+.task .row { margin-bottom: 8px; }
+.task textarea { margin-bottom: 6px; }
+.task label.check { margin: 4px 0 0; font-weight: 500; }
+.btn.danger { color: #b3261e; }
+[hidden] { display: none !important; }
+.chatrow { margin-top: 8px; }
+.pname { width: 72px; flex: none; font-weight: 600; font-size: 14px; }

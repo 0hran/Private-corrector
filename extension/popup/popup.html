@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Private Corrector</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <span class="logo"></span>
+    <strong>Private Corrector</strong>
+    <span class="spacer"></span>
+    <button id="settings" class="link" title="Settings">⚙</button>
+  </header>
+  <textarea id="input" rows="7" placeholder="Select text on the page before clicking the icon, or paste or type text here…"></textarea>
+  <p id="loaded" class="hint" hidden></p>
+
+  <p class="label">Choose one or several functions:</p>
+  <div id="actions" class="actions"></div>
+  <p class="label" id="mineLabel" hidden>My saved tasks:</p>
+  <div id="mine" class="actions"></div>
+
+  <div id="ask" class="ask" hidden>
+    <textarea id="question" rows="2" placeholder="Your question or instruction (Enter to send)"></textarea>
+    <div class="save-row">
+      <button id="saveTaskOpen" class="link small" type="button">★ Save this as a task</button>
+      <span id="saveTaskForm" hidden>
+        <input id="saveTaskName" type="text" placeholder="Task name">
+        <label class="small"><input id="saveTaskRewrite" type="checkbox"> reply with the text only</label>
+        <button id="saveTaskBtn" class="btn small" type="button">Save</button>
+      </span>
+      <span id="saveTaskDone" class="small ok" hidden>Saved ✓</span>
+    </div>
+  </div>
+
+  <div class="dest">
+    <label for="destination">Send to</label>
+    <select id="provider">
+      <option value="gemini">Gemini</option>
+      <option value="claude">Claude</option>
+      <option value="chatgpt">ChatGPT</option>
+    </select>
+    <select id="destination">
+      <option value="private">Private chat</option>
+      <option value="chat">My default chat</option>
+    </select>
+  </div>
+  <button id="go" class="btn primary go" disabled>Send</button>
+  <div id="error" class="error" hidden></div>
+  <p class="hint">Puts your text and the instructions in the AI window, ready for you to send. The prompt is also copied to the clipboard.</p>
+  <script src="../common/compat.js"></script>
+  <script src="../common/actions.js"></script>
+  <script src="../common/providers.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

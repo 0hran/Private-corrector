@@ -1,0 +1,46 @@
+# Builds the Chrome and Firefox zips and publishes them as a GitHub release.
+# Runs on every push to main (and can be started by hand from the Actions tab).
+# The release is named after the version in extension/manifest.json, e.g. v7.1.0;
+# pushing again with the same version replaces that release's zips.
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Build both versions
+        run: ./build.sh
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(python3 -c 'import json; print(json.load(open("extension/manifest.json"))["version"])')
+          TAG="v$VERSION"
+          NOTES="Private Corrector $VERSION for Chrome and Firefox.
+
+          - Chrome, Edge, Brave, Opera: download private-corrector-chrome.zip, unzip it, open chrome://extensions, turn on Developer mode, click Load unpacked and choose the folder.
+          - Firefox: download private-corrector-firefox.zip, open about:debugging#/runtime/this-firefox, click Load Temporary Add-on and choose the zip.
+
+          Full guide: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/private-corrector-chrome.zip dist/private-corrector-firefox.zip --clobber
+          else
+            gh release create "$TAG" dist/private-corrector-chrome.zip dist/private-corrector-firefox.zip \
+              --title "Private Corrector $VERSION" --notes "$NOTES" --target "$GITHUB_SHA" --latest
+          fi

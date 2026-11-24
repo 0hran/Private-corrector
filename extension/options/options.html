@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Private Corrector – Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main>
+    <h1><span class="logo"></span> Private Corrector settings</h1>
+    <p class="hint">The extension puts your selected text and the instructions for the action in the message box of Claude, ChatGPT or Gemini. You press Send yourself.
+      It uses your normal account on that site (free or paid): no API key, no extra cost.</p>
+
+    <section id="perm" class="warn" hidden>
+      Firefox has not yet allowed this extension to fill in the message box on <span id="permSites">the AI sites</span>.
+      <button id="grant" class="btn primary">Allow</button>
+    </section>
+
+    <h2>Where prompts go</h2>
+    <label for="provider">AI assistant</label>
+    <select id="provider">
+      <option value="gemini">Gemini (gemini.google.com), default</option>
+      <option value="claude">Claude (claude.ai)</option>
+      <option value="chatgpt">ChatGPT (chatgpt.com)</option>
+    </select>
+    <p class="hint">Make sure you are signed in to it in Firefox. You can pick another one for a single prompt in the toolbar popup (<em>Send to</em>).</p>
+
+    <label class="check"><input type="radio" name="destination" value="private"> Private chat (default)</label>
+    <p class="hint">A new chat that is not saved in your history: Claude's <em>incognito chat</em>, ChatGPT's or Gemini's <em>temporary chat</em>.
+      While the AI window stays open, every prompt goes into that same chat. Closing the window ends it.</p>
+
+    <label class="check"><input type="radio" name="destination" value="chat"> My default chat</label>
+    <p class="hint">Every prompt goes into one chat that you choose for each AI, kept in your history. The window always goes back to it.
+      Open the chat you want, then click <strong>Use the open chat</strong> next to that AI (or paste its address). If an AI has no default chat, its private chat is used.</p>
+    <div id="chats"></div>
+    <p class="hint">A long chat uses up your usage limits faster (the AI re-reads it at each message): start a fresh one from time to time.</p>
+
+    <h2>My saved tasks</h2>
+    <p class="hint">Your own prompts, available in the right-click menu (★) and the toolbar popup, where they can be combined with the other functions.
+      Write the instruction as you would to the AI, for example “Make this email more polite and concise”.
+      Tick <em>Reply with the text only</em> when the task transforms the text (so the result can be copied directly).</p>
+    <div id="tasks"></div>
+    <button id="addTask" class="btn" type="button">＋ Add a task</button>
+
+    <h2>Other settings</h2>
+    <label for="openIn">Open the AI page</label>
+    <select id="openIn">
+      <option value="window">In a small floating window</option>
+      <option value="foreground">In a new tab, and switch to it</option>
+      <option value="background">In a new tab in the background</option>
+    </select>
+
+    <label for="answerLanguage">Language of answers for Develop, Papers, Explain and Ask</label>
+    <select id="answerLanguage">
+      <option value="same">Same as the selected text</option>
+      <option value="English">English</option>
+      <option value="French">French</option>
+      <option value="Spanish">Spanish</option>
+      <option value="German">German</option>
+      <option value="Italian">Italian</option>
+      <option value="Portuguese">Portuguese</option>
+    </select>
+    <p class="hint">Correct, Reformulate and Academic always keep the language of the text.</p>
+
+    <label for="shortenAmount">“Shorten” reduces the text by</label>
+    <select id="shortenAmount">
+      <option value="about a quarter">About a quarter (light trim)</option>
+      <option value="about a third">About a third</option>
+      <option value="about half">About half</option>
+      <option value="as much as possible while keeping every key point">As much as possible (key points only)</option>
+    </select>
+
+    <label for="customInstructions">Personal instructions (optional, added to every prompt)</label>
+    <textarea id="customInstructions" rows="3" placeholder="e.g. I write in British English. My field is molecular biology."></textarea>
+
+
+    <div class="row actions">
+      <button id="save" class="btn primary">Save</button>
+      <button id="reset" class="btn">Reset to defaults</button>
+      <span id="status" class="status"></span>
+    </div>
+  </main>
+  <script src="../common/compat.js"></script>
+  <script src="../common/providers.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>
