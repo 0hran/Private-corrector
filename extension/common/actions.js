@@ -56,6 +56,16 @@ var PC_ACTIONS = [
       "so when you are unsure about a detail."
   },
   {
+    id: "explain",
+    title: "Explain",
+    rewrite: false,
+    instructions:
+      "Explain the text inside the <text> tags so that I understand it fully. Start with a short " +
+      "summary of what it says in plain words, then explain the key ideas, the technical terms and " +
+      "any implicit context or reasoning, with a simple example where it helps. If the text contains " +
+      "errors, ambiguities or debatable claims, point them out briefly."
+  },
+  {
     id: "ask",
     title: "Ask Claude…",
     rewrite: false,

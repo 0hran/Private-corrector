@@ -9,6 +9,7 @@ A Firefox extension that sends the text you select to **claude.ai**, together wi
 | **Make it more academic** | Rewrite in a formal research-paper style without inventing facts or citations; reply with the text only |
 | **Develop / provide content** | Expand the ideas with explanations, arguments and examples |
 | **Suggest research papers** | Recommend relevant papers with full references and explain why each one matters, checking on the web where possible |
+| **Explain** | Explain the text in plain words: summary, key ideas, technical terms, context, and a simple example where it helps |
 | **Ask Claude…** | Your own question or instruction about the selection |
 
 ## How to use it
@@ -58,7 +59,7 @@ The extension makes **no network requests**. It only opens your Claude page and 
 
 - Use Claude incognito chats (on by default).
 - Open the Claude page in a floating mini window (default), a tab, or a background tab.
-- Language of answers for Develop, Papers and Ask. By default it follows the language of the text.
+- Language of answers for Develop, Papers, Explain and Ask. By default it follows the language of the text.
 - Personal instructions added to every prompt.
 - Advanced: the address used to start a new chat (keep `https://claude.ai/new` for incognito, which is not available inside projects).
 
