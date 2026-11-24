@@ -2,15 +2,13 @@
 "use strict";
 
 const DEFAULT_SETTINGS = {
-  urlTemplate: "https://claude.ai/new?q=%s",
+  newChatUrl: "https://claude.ai/new",
+  conversation: "same", // "same" = keep using the open chat | "new" = new chat each time
   openIn: "window", // "window" (floating mini window) | "foreground" | "background" (tabs)
   answerLanguage: "same",
   customInstructions: ""
 };
 
-// Prompts longer than this (once URL-encoded) are not put in the URL;
-// claude.ai is opened empty and you paste the prompt from the clipboard.
-const MAX_URL_PROMPT = 12000;
 
 async function getSettings() {
   return { ...DEFAULT_SETTINGS, ...(await browser.storage.local.get(DEFAULT_SETTINGS)) };
@@ -64,77 +62,150 @@ async function run(action, text, tab, frames) {
     if (question === null) return; // cancelled
   }
   const result = await sendToClaude(action, text, question);
-  if (result.pasteNeeded) {
-    notify("The text is long, so it was copied instead of filled in. Click in Claude's message box and press Ctrl+V.");
+  if (!result.filled) {
+    notify("The prompt is on your clipboard: click in Claude's message box and press Ctrl+V.");
   }
 }
 
-/* Build the prompt, copy it, and open claude.ai. */
+/* ---------- Sending to the Claude page ---------- */
+
+/*
+ * Build the prompt, copy it (as a backup), then put it in Claude's message box.
+ * One Claude page is reused every time. With "same conversation", the prompt goes into
+ * the chat already open there; otherwise that page starts a new chat.
+ * The prompt is only filled in: you press Send yourself.
+ */
 async function sendToClaude(action, text, question) {
   const settings = await getSettings();
   const prompt = pcBuildPrompt(action, text, settings, question);
   await copyToClipboard(prompt);
 
-  const encoded = encodeURIComponent(prompt);
-  const fits = encoded.length <= MAX_URL_PROMPT && settings.urlTemplate.includes("%s");
-  const url = fits ? settings.urlTemplate.replace("%s", encoded) : baseUrl(settings.urlTemplate);
-  if (settings.openIn === "window") {
-    await openFloatingWindow(url);
+  let tab = await getClaudeTab();
+  const onClaude = tab && /^https:\/\/claude\.ai\//.test(tab.url || "");
+
+  if (tab && onClaude && settings.conversation === "same") {
+    await focusTab(tab);
+  } else if (tab) {
+    await browser.tabs.update(tab.id, { url: settings.newChatUrl });
+    await focusTab(tab);
+    await waitForLoad(tab.id);
   } else {
-    await browser.tabs.create({ url, active: settings.openIn !== "background" });
+    tab = await openClaudePage(settings);
+    await waitForLoad(tab.id);
   }
-  return { pasteNeeded: !fits };
+  return { filled: await fillPrompt(tab.id, prompt) };
 }
 
-/* ---------- Floating Claude window ---------- */
+/* The Claude page opened by the extension, if it is still open. */
+async function getClaudeTab() {
+  const { claudeTabId } = await browser.storage.session.get("claudeTabId");
+  if (claudeTabId == null) return null;
+  try {
+    return await browser.tabs.get(claudeTabId);
+  } catch (_) {
+    return null; // closed
+  }
+}
+
+async function focusTab(tab) {
+  await browser.tabs.update(tab.id, { active: true });
+  await browser.windows.update(tab.windowId, { focused: true, state: "normal" }).catch(() => {});
+}
 
 const WINDOW_WIDTH = 460;
 const WINDOW_HEIGHT = 720;
 
-/* Open claude.ai in a small window without toolbars, or reuse the one already open
-   (it keeps the size and position you gave it). */
-async function openFloatingWindow(url) {
-  const { claudeWindowId } = await browser.storage.session.get("claudeWindowId");
-  if (claudeWindowId != null) {
+/* Open the Claude page: a small floating window (default) or a tab. */
+async function openClaudePage(settings) {
+  const url = settings.newChatUrl;
+  let tab;
+  if (settings.openIn === "window") {
+    let pos = {};
     try {
-      const win = await browser.windows.get(claudeWindowId, { populate: true });
-      const tab = win.tabs && win.tabs[0];
-      if (tab) {
-        await browser.tabs.update(tab.id, { url });
-        await browser.windows.update(win.id, { focused: true, state: "normal" });
-        return;
-      }
-    } catch (_) {
-      /* window was closed */
-    }
+      // Top-right of the current Firefox window.
+      const current = await browser.windows.getLastFocused();
+      pos = {
+        left: Math.max(0, current.left + current.width - WINDOW_WIDTH - 24),
+        top: Math.max(0, current.top + 80)
+      };
+    } catch (_) {}
+    const win = await browser.windows.create({ url, type: "popup", width: WINDOW_WIDTH, height: WINDOW_HEIGHT, ...pos });
+    tab = win.tabs[0];
+  } else {
+    tab = await browser.tabs.create({ url, active: settings.openIn !== "background" });
   }
-
-  // Place it at the top-right of the current Firefox window.
-  let left;
-  let top;
-  try {
-    const current = await browser.windows.getLastFocused();
-    left = Math.max(0, current.left + current.width - WINDOW_WIDTH - 24);
-    top = Math.max(0, current.top + 80);
-  } catch (_) {}
-
-  const win = await browser.windows.create({
-    url,
-    type: "popup",
-    width: WINDOW_WIDTH,
-    height: WINDOW_HEIGHT,
-    ...(left != null ? { left, top } : {})
-  });
-  await browser.storage.session.set({ claudeWindowId: win.id });
+  await browser.storage.session.set({ claudeTabId: tab.id });
+  return tab;
 }
 
-browser.windows.onRemoved.addListener(async (windowId) => {
-  const { claudeWindowId } = await browser.storage.session.get("claudeWindowId");
-  if (windowId === claudeWindowId) await browser.storage.session.remove("claudeWindowId");
+browser.tabs.onRemoved.addListener(async (tabId) => {
+  const { claudeTabId } = await browser.storage.session.get("claudeTabId");
+  if (tabId === claudeTabId) await browser.storage.session.remove("claudeTabId");
 });
 
-function baseUrl(template) {
-  return template.split("?")[0].replace("%s", "");
+function waitForLoad(tabId, timeoutMs = 20000) {
+  return new Promise((resolve) => {
+    const done = () => {
+      browser.tabs.onUpdated.removeListener(listener);
+      clearTimeout(timer);
+      resolve();
+    };
+    const listener = (id, change, t) => {
+      if (id === tabId && change.status === "complete" && t.url && t.url.startsWith("https://claude.ai")) done();
+    };
+    const timer = setTimeout(done, timeoutMs);
+    browser.tabs.onUpdated.addListener(listener);
+  });
+}
+
+/* Put the prompt in Claude's message box (replacing any draft). Never presses Send. */
+async function fillPrompt(tabId, prompt) {
+  try {
+    const [res] = await browser.scripting.executeScript({
+      target: { tabId },
+      args: [prompt],
+      func: async (text) => {
+        const find = () =>
+          document.querySelector('div.ProseMirror[contenteditable="true"]') ||
+          document.querySelector('[contenteditable="true"]') ||
+          document.querySelector("textarea");
+        let box = find();
+        for (let i = 0; !box && i < 50; i++) {
+          await new Promise((r) => setTimeout(r, 200)); // the page may still be starting
+          box = find();
+        }
+        if (!box) return false;
+        box.focus();
+        if (box.tagName === "TEXTAREA") {
+          box.select();
+          if (!document.execCommand("insertText", false, text)) {
+            box.value = text;
+            box.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+          return true;
+        }
+        // Select the current draft so the prompt replaces it.
+        const range = document.createRange();
+        range.selectNodeContents(box);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        // Simulate a paste: the editor handles it like a normal Ctrl+V
+        // (long texts may become a "pasted text" attachment, as usual on claude.ai).
+        const data = new DataTransfer();
+        data.setData("text/plain", text);
+        const ev = new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true });
+        box.dispatchEvent(ev);
+        if (ev.defaultPrevented) return true;
+        document.execCommand("insertText", false, text);
+        return box.textContent.includes(text.split("\n")[0].slice(0, 40));
+      }
+    });
+    return Boolean(res && res.result);
+  } catch (err) {
+    console.warn("Private Corrector: could not fill the prompt", err);
+    return false;
+  }
 }
 
 /* Read the full selection in the page (text boxes included). Runs only on click, thanks to activeTab. */

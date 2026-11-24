@@ -8,12 +8,24 @@
 <body>
   <main>
     <h1><span class="logo"></span> Private Corrector settings</h1>
-    <p class="hint">The extension opens claude.ai with your selected text and the instructions for the action.
+    <p class="hint">The extension puts your selected text and the instructions for the action in the message box of a Claude page. You press Send yourself.
       It uses your normal Claude account (Free, Pro or Max): no API key, no extra cost. Make sure you are signed in to claude.ai in Firefox.</p>
 
-    <label for="openIn">Open Claude</label>
+    <section id="perm" class="warn" hidden>
+      Firefox has not allowed this extension to fill in the message box on claude.ai yet.
+      <button id="grant" class="btn primary">Allow</button>
+    </section>
+
+    <label for="conversation">Each new prompt</label>
+    <select id="conversation">
+      <option value="same">Goes into the conversation already open in the Claude page</option>
+      <option value="new">Starts a new chat in the same Claude page</option>
+    </select>
+    <p class="hint">Either way, only one Claude page is used. In the same conversation, Claude also sees your earlier texts, and long conversations use up your usage limits faster: start a new chat in that page from time to time.</p>
+
+    <label for="openIn">Open the Claude page</label>
     <select id="openIn">
-      <option value="window">In a small floating window (reused each time)</option>
+      <option value="window">In a small floating window</option>
       <option value="foreground">In a new tab, and switch to it</option>
       <option value="background">In a new tab in the background</option>
     </select>
@@ -35,9 +47,9 @@
 
     <details>
       <summary>Advanced</summary>
-      <label for="urlTemplate">Claude address (<code>%s</code> is replaced by the prompt)</label>
-      <input id="urlTemplate" type="text" spellcheck="false">
-      <p class="hint">Change this only if claude.ai stops filling in the prompt. Without <code>%s</code>, Claude opens empty and you paste the prompt (it is always copied to the clipboard).</p>
+      <label for="newChatUrl">Address used to start a new chat</label>
+      <input id="newChatUrl" type="text" spellcheck="false">
+      <p class="hint">For example a Claude project's page, so that new chats are created in that project.</p>
     </details>
 
     <div class="row actions">

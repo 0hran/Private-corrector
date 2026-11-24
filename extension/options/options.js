@@ -2,7 +2,8 @@
 
 const $ = (id) => document.getElementById(id);
 const DEFAULTS = {
-  urlTemplate: "https://claude.ai/new?q=%s",
+  newChatUrl: "https://claude.ai/new",
+  conversation: "same",
   openIn: "window",
   answerLanguage: "same",
   customInstructions: ""
@@ -20,7 +21,7 @@ async function load() {
 $("save").addEventListener("click", async () => {
   const s = {};
   for (const k of FIELDS) s[k] = $(k).value.trim();
-  if (!s.urlTemplate) s.urlTemplate = DEFAULTS.urlTemplate;
+  if (!s.newChatUrl) s.newChatUrl = DEFAULTS.newChatUrl;
   await browser.storage.local.set(s);
   $("status").textContent = "Saved ✓";
 });
@@ -31,4 +32,14 @@ $("reset").addEventListener("click", async () => {
   $("status").textContent = "Defaults restored ✓";
 });
 
+const ORIGINS = { origins: ["https://claude.ai/*"] };
+async function checkPermission() {
+  $("perm").hidden = await browser.permissions.contains(ORIGINS);
+}
+$("grant").addEventListener("click", async () => {
+  await browser.permissions.request(ORIGINS);
+  checkPermission();
+});
+
 load();
+checkPermission();

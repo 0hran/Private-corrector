@@ -15,15 +15,20 @@ A Firefox extension that sends the text you select to **claude.ai**, together wi
 
 1. Sign in to claude.ai in Firefox once.
 2. Select text on any page, then right-click, open **Private Corrector → Claude**, and choose an action.
-3. A **small floating claude.ai window** opens at the top right with the prompt filled in. Check it, press Send yourself, then copy Claude's answer with its copy button.
+3. The extension puts the prompt in the message box of **your Claude page**. Check it, press Send yourself, then copy Claude's answer with its copy button.
 
-The same mini window is reused for every action (each action starts a new chat), and it keeps the size and position you give it. To use a normal tab instead, change it in the settings.
+**One Claude page only.** The first time, a small floating claude.ai window opens at the top right. After that, the extension always uses that same page: it brings it to the front and fills in the next prompt, in the **conversation already open there**. No new windows, tabs or chats pile up. You can:
+- start a new chat in that window yourself whenever you want (a long conversation uses up your usage limits faster, and Claude also sees your earlier texts);
+- choose in the settings to start a new chat in that same page for every action;
+- open the page in a normal tab instead of a floating window.
+
+If you close the page, the next action opens a new one.
 
 Keyboard shortcuts: `Alt+Shift+C` (correct) and `Alt+Shift+A` (ask). You can change them in `about:addons`: click the gear icon, then **Manage Extension Shortcuts**.
 
 The **toolbar button** opens a popup where you can paste text and use the same actions. Use it on pages where extensions can't run, such as the PDF viewer.
 
-The prompt is **always copied to your clipboard** as well. If the text is very long (roughly 1,500 words or more), it is too long to put in the address. claude.ai then opens empty: click in the message box and press **Ctrl+V**.
+The prompt is **always copied to your clipboard** as well. If the extension can't fill in the message box (for example after a claude.ai redesign), a notification tells you: click in the box and press **Ctrl+V**. Very long texts may show up as a "pasted text" attachment, as they do when you paste them yourself.
 
 ## Install
 
@@ -38,17 +43,19 @@ A temporary add-on is removed when Firefox restarts. To install it permanently, 
 |---|---|
 | `menus` | Adds the right-click entry, shown only when text is selected |
 | `activeTab` + `scripting` | Reads your selection **only at the moment you click an action or use a shortcut**, in that tab only. No script runs on the pages you visit. |
+| Access to `claude.ai` | Fills in the message box of the Claude page the extension opened (it never presses Send and never reads your chats) |
 | `clipboardWrite` | Copies the prompt (it never reads the clipboard) |
 | `notifications` | Tells you when you need to paste the prompt yourself |
 | `storage` | Saves your settings |
 
-The extension makes **no network requests**. All it does is open a claude.ai tab. Your text then goes to Claude exactly as if you had pasted it in yourself, under your account's normal settings and usage limits.
+The extension makes **no network requests**. It only opens your Claude page and fills in the message box. Nothing is sent until you press Send, and then it goes to Claude exactly as if you had pasted it in yourself, under your account's normal settings and usage limits.
 
 ## Settings
 
-- Open Claude in a floating mini window (default), a new tab, or a background tab.
+- Each new prompt: in the conversation already open (default) or in a new chat, always in the same page.
+- Open the Claude page in a floating mini window (default), a tab, or a background tab.
 - Language of answers for Develop, Papers and Ask. By default it follows the language of the text.
 - Personal instructions added to every prompt.
-- Advanced: the claude.ai address used, in case the way prompts are filled in ever changes.
+- Advanced: the address used to start a new chat, for example a Claude project page.
 
 To change the wording of an action's instructions, edit `extension/common/actions.js`, then click **Reload** in `about:debugging`.

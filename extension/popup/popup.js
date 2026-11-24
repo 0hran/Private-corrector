@@ -47,8 +47,8 @@ async function send(actionId) {
     return;
   }
   const res = await browser.runtime.sendMessage({ type: "pc-send", actionId, text, question: $("question").value.trim() });
-  if (res && res.pasteNeeded) {
-    $("error").textContent = "Long text: claude.ai opened empty. Click in its message box and press Ctrl+V.";
+  if (res && !res.filled) {
+    $("error").textContent = "The prompt is on your clipboard: click in Claude's message box and press Ctrl+V.";
     $("error").hidden = false;
   } else {
     window.close();
