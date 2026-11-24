@@ -32,3 +32,5 @@ input[type=radio] { accent-color: var(--accent); }
 [hidden] { display: none !important; }
 .chatrow { margin-top: 8px; }
 .pname { width: 72px; flex: none; font-weight: 600; font-size: 14px; }
+.warnline { background: var(--warn); border-radius: 8px; padding: 8px 10px; }
+.row select { flex: 1; min-width: 0; }

@@ -36,9 +36,10 @@
   <div class="dest">
     <label for="destination">Send to</label>
     <select id="provider">
+      <option value="gemini-api">Gemini API (automatic)</option>
       <option value="claude">Claude</option>
       <option value="chatgpt">ChatGPT</option>
-      <option value="gemini">Gemini</option>
+      <option value="gemini">Gemini (website)</option>
     </select>
     <select id="destination">
       <option value="private">Private chat</option>
@@ -47,7 +48,7 @@
   </div>
   <button id="go" class="btn primary go" disabled>Send</button>
   <div id="error" class="error" hidden></div>
-  <p class="hint">Puts your text and the instructions in the AI window, ready for you to send. The prompt is also copied to the clipboard.</p>
+  <p class="hint" id="modeHint"></p>
   <script src="../common/actions.js"></script>
   <script src="../common/providers.js"></script>
   <script src="popup.js"></script>

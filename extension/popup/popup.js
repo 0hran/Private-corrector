@@ -8,11 +8,18 @@ let customTasks = [];
 let allActions = PC_ACTIONS;
 let selected = new Set();
 let chatUrls = {};
+let source = null; // { tabId, frameId } when the text comes from a selection in the page
 let wantedDestination = "private";
 
 /* "Private chat" is named after each AI; "My default chat" needs a chat saved in the settings. */
 function updateDestination() {
   const id = $("provider").value;
+  const api = id === "gemini-api";
+  $("destination").hidden = api;
+  $("modeHint").textContent = api
+    ? "Runs automatically with your Gemini API key; the answer appears in the Private Corrector window."
+    : "Puts your text and the instructions in the AI window, ready for you to send. The prompt is also copied to the clipboard.";
+  if (api) return;
   const p = pcProvider(id);
   const priv = $("destination").querySelector('option[value="private"]');
   const chat = $("destination").querySelector('option[value="chat"]');
@@ -48,9 +55,10 @@ async function loadSelection() {
         return String(window.getSelection() || "");
       }
     });
-    const text = results.map((r) => r.result).find((t) => t && t.trim());
-    if (text) {
-      show(text, "✓ Text selected in the page pasted here.");
+    const found = results.find((r) => r.result && r.result.trim());
+    if (found) {
+      source = { tabId: tab.id, frameId: found.frameId };
+      show(found.result, "✓ Text selected in the page pasted here.");
       return;
     }
   } catch (_) {
@@ -135,7 +143,7 @@ function refresh() {
   $("ask").hidden = !selected.has("ask");
   const n = selected.size;
   $("go").disabled = n === 0;
-  const name = pcProvider($("provider").value).name;
+  const name = $("provider").value === "gemini-api" ? "Gemini" : pcProvider($("provider").value).name;
   $("go").textContent = n > 1 ? `Send ${n} combined functions to ${name}` : `Send to ${name}`;
   try {
     localStorage.setItem(SELECTED_KEY, JSON.stringify([...selected]));
@@ -218,7 +226,8 @@ async function send() {
     text,
     question: $("question").value.trim(),
     provider: $("provider").value,
-    destination: $("destination").value
+    destination: $("destination").value,
+    source
   });
   if (res && !res.filled) {
     error(`The prompt is on your clipboard: click in ${res.name}'s message box and press Ctrl+V.`);
@@ -230,11 +239,11 @@ async function send() {
 /* ---------- Start ---------- */
 
 (async () => {
-  const s = await browser.storage.local.get({ customTasks: [], provider: "claude", destination: "private", chatUrls: {}, chatUrl: "" });
+  const s = await browser.storage.local.get({ customTasks: [], provider: "gemini-api", destination: "private", chatUrls: {}, chatUrl: "" });
   customTasks = s.customTasks || [];
   chatUrls = { claude: s.chatUrl || undefined, ...s.chatUrls };
   // "Send to" starts on your defaults.
-  $("provider").value = PC_PROVIDERS[s.provider] ? s.provider : "claude";
+  $("provider").value = PC_PROVIDERS[s.provider] || s.provider === "gemini-api" ? s.provider : "gemini-api";
   wantedDestination = s.destination === "chat" ? "chat" : "private";
   updateDestination();
   $("provider").addEventListener("change", () => {

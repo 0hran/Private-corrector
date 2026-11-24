@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Private Corrector",
-  "version": "5.0.0",
-  "description": "Select text and send it to Claude, ChatGPT or Gemini to correct it with minimal changes, reformulate, shorten, make it academic, explain, find research papers or run your own saved prompts.",
+  "version": "6.0.0",
+  "description": "Select text and get it corrected, reformulated, shortened, made academic, explained and more: automatically with the Gemini API, or through Claude, ChatGPT or Gemini's website.",
   "icons": {
     "48": "icons/icon.svg",
     "96": "icons/icon.svg"
@@ -30,7 +30,8 @@
   "host_permissions": [
     "https://claude.ai/*",
     "https://chatgpt.com/*",
-    "https://gemini.google.com/*"
+    "https://gemini.google.com/*",
+    "https://generativelanguage.googleapis.com/*"
   ],
   "background": {
     "scripts": [
