@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Private Corrector – Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main>
+    <h1><span class="logo"></span> Private Corrector settings</h1>
+
+    <section id="perm" class="warn" hidden>
+      Firefox has not yet allowed this extension to reach <code>api.anthropic.com</code>.
+      <button id="grant" class="btn primary">Allow access</button>
+    </section>
+
+    <label for="apiKey">Anthropic API key</label>
+    <div class="row">
+      <input id="apiKey" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
+      <button id="toggleKey" class="btn" type="button">Show</button>
+    </div>
+    <p class="hint">Create one at <a href="https://platform.claude.com/settings/keys" target="_blank" rel="noopener">platform.claude.com</a>.
+      It is stored only in this browser (extension local storage) and sent only to api.anthropic.com.</p>
+
+    <label for="model">Model</label>
+    <select id="model">
+      <option value="claude-opus-5-5">Claude Opus 5.5 (recommended)</option>
+      <option value="claude-sonnet-5-5">Claude Sonnet 5.5 (faster, cheaper)</option>
+      <option value="claude-haiku-5-5">Claude Haiku 5.5 (fastest, cheapest)</option>
+      <option value="claude-fable-5-2">Claude Fable 5.2 (most capable, most expensive)</option>
+    </select>
+
+    <label for="answerLanguage">Language of explanations (develop, papers, free questions)</label>
+    <select id="answerLanguage">
+      <option value="same">Same as the selected text</option>
+      <option value="English">English</option>
+      <option value="French">French</option>
+      <option value="Spanish">Spanish</option>
+      <option value="German">German</option>
+      <option value="Italian">Italian</option>
+      <option value="Portuguese">Portuguese</option>
+    </select>
+    <p class="hint">Correction, reformulation and academic rewriting always keep the language of the text.</p>
+
+    <label class="check"><input id="webSearch" type="checkbox"> Use web search to verify suggested research papers</label>
+    <p class="hint">Recommended: reduces invented references. Web search is billed per search and must be enabled for your organization in the Claude Console.</p>
+
+    <label for="customInstructions">Personal instructions (optional)</label>
+    <textarea id="customInstructions" rows="4" placeholder="e.g. I write in British English. Use the Oxford comma. My field is molecular biology."></textarea>
+
+    <div class="row actions">
+      <button id="save" class="btn primary">Save</button>
+      <button id="test" class="btn">Test the key</button>
+      <span id="status" class="status"></span>
+    </div>
+  </main>
+  <script src="../common/actions.js"></script>
+  <script src="../common/util.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

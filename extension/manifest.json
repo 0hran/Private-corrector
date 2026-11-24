@@ -1,0 +1,51 @@
+{
+  "manifest_version": 3,
+  "name": "Private Corrector",
+  "version": "1.0.0",
+  "description": "Select text, then let Claude correct it with minimal changes, reformulate it, make it academic, develop it, suggest research papers or answer a free question.",
+  "icons": {
+    "48": "icons/icon.svg",
+    "96": "icons/icon.svg"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "private-corrector@local",
+      "strict_min_version": "128.0",
+      "data_collection_permissions": {
+        "required": ["websiteContent"]
+      }
+    }
+  },
+  "permissions": ["menus", "storage", "activeTab"],
+  "host_permissions": ["https://api.anthropic.com/*"],
+  "background": {
+    "scripts": ["common/actions.js", "background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["common/actions.js", "common/util.js", "content.js"],
+      "all_frames": true,
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Private Corrector",
+    "default_popup": "popup/popup.html",
+    "default_icon": "icons/icon.svg"
+  },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "commands": {
+    "correct-selection": {
+      "suggested_key": { "default": "Alt+Shift+C" },
+      "description": "Correct the selected text (minimal changes)"
+    },
+    "ask-selection": {
+      "suggested_key": { "default": "Alt+Shift+A" },
+      "description": "Ask Claude about the selected text"
+    }
+  }
+}

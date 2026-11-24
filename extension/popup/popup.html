@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Private Corrector</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <span class="logo"></span>
+    <strong>Private Corrector</strong>
+    <span class="spacer"></span>
+    <button id="settings" class="link" title="Settings">⚙</button>
+  </header>
+  <textarea id="input" rows="6" placeholder="Paste or type text here… (or select text on a page and right-click → Private Corrector)"></textarea>
+  <div id="actions" class="actions"></div>
+  <div id="ask" class="ask" hidden>
+    <textarea id="question" rows="2" placeholder="Your question or instruction… (Enter to send)"></textarea>
+    <button id="send" class="btn primary">Ask</button>
+  </div>
+  <div id="status" class="status" hidden><span class="spinner"></span>Claude is writing…</div>
+  <div id="error" class="error" hidden></div>
+  <div id="output" class="output"></div>
+  <div id="note" class="note" hidden></div>
+  <div id="sources" class="sources" hidden></div>
+  <footer id="footer" hidden>
+    <button id="copy" class="btn">Copy</button>
+    <button id="use" class="btn">Use as input</button>
+    <button id="diff" class="btn" hidden>Show changes</button>
+  </footer>
+  <script src="../common/actions.js"></script>
+  <script src="../common/util.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
