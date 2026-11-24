@@ -27,7 +27,9 @@ Claude re-reads the whole chat at each message, so close the window now and then
 
 Keyboard shortcuts: `Alt+Shift+C` (correct) and `Alt+Shift+A` (ask). You can change them in `about:addons`: click the gear icon, then **Manage Extension Shortcuts**.
 
-The **toolbar button** opens a popup with the same actions. Text you selected on the page before clicking the icon is pasted into the popup automatically, so you can check or edit it before choosing an action. You can also paste or type text yourself, for example on pages where extensions can't run, such as the PDF viewer.
+The **toolbar button** opens a popup with the same actions. Text you selected on the page before clicking the icon is pasted into the popup automatically, so you can check or edit it before choosing an action.
+
+**Text from other programs** (Word, a PDF reader, email...): select it, press **Ctrl+C**, then click the icon. When nothing is selected in Firefox, the popup pastes what you last copied. (The prompts the extension copies itself are skipped.) You can also type or paste text yourself.
 
 The prompt is **always copied to your clipboard** as well. If the extension can't fill in the message box (for example after a claude.ai redesign), a notification tells you: click in the box and press **Ctrl+V**. Very long texts may show up as a "pasted text" attachment, as they do when you paste them yourself.
 
@@ -45,7 +47,8 @@ A temporary add-on is removed when Firefox restarts. To install it permanently, 
 | `menus` | Adds the right-click entry, shown only when text is selected |
 | `activeTab` + `scripting` | Reads your selection **only at the moment you click an action or use a shortcut**, in that tab only. No script runs on the pages you visit. |
 | Access to `claude.ai` | In the Claude window the extension opened: clicks the incognito (ghost) icon on new chats and fills in the message box. It never presses Send and never reads your chats. |
-| `clipboardWrite` | Copies the prompt (it never reads the clipboard) |
+| `clipboardWrite` | Copies the prompt as a backup |
+| `clipboardRead` | Only when you open the popup and nothing is selected in Firefox: pastes what you last copied into the popup. Nothing is sent until you choose an action. |
 | `notifications` | Tells you when you need to paste the prompt yourself |
 | `storage` | Saves your settings |
 

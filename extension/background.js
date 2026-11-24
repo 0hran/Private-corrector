@@ -294,6 +294,7 @@ async function askQuestion(tab, frameIds) {
 }
 
 async function copyToClipboard(text) {
+  await browser.storage.session.set({ lastCopiedPrompt: text });
   try {
     await navigator.clipboard.writeText(text);
     return;
