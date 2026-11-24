@@ -80,6 +80,21 @@ var PC_ACTIONS = [
       "so that I can copy it directly."
   },
   {
+    id: "french",
+    title: "Translate to French",
+    group: "variety", // British English, American English and French exclude each other
+    translates: true,
+    task: "translate it into natural, idiomatic French (French typography: « » quotation marks, a space before : ; ? !), keeping its meaning, tone, register and formatting",
+    rewrite: true,
+    instructions:
+      "Translate the text inside the <text> tags into French. Write natural, idiomatic French that " +
+      "reads as if a native speaker wrote it, keeping the meaning, tone, register and formatting " +
+      "(paragraphs, lists). Keep names, titles of works, code and quotations that should stay in " +
+      "their original language. Use French typography: « » quotation marks and a space before : ; ? !. " +
+      "If the text is already in French, return it with only its errors corrected. Reply with the " +
+      "French text only, with no introduction or explanation, so that I can copy it directly."
+  },
+  {
     id: "develop",
     task: "Develop the ideas of the text into well-structured content, with explanations, arguments and examples, staying faithful to my intent; point out any claim that would need a source.",
     section: "Developed content",
@@ -209,7 +224,9 @@ function pcBuildPrompt(actions, text, settings, question) {
           sections.map((t, i) => `${i + 1}. ${t}`).join("\n") +
           "\n" +
           (rewrites.length
-            ? "The rewritten text keeps the language of the original. For the other sections, " +
+            ? (rewrites.some((a) => a.translates)
+                ? "For the other sections, "
+                : "The rewritten text keeps the language of the original. For the other sections, ") +
               pcLanguageLine(settings).replace(/^Answer/, "answer")
             : pcLanguageLine(settings))
       );

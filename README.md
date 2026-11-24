@@ -19,6 +19,7 @@ All versions: [Releases](https://github.com/0hran/Private-corrector/releases) ·
 | **Shorten** | Reduce the text (by about a third by default; adjustable in the settings) while keeping the key ideas, facts and conclusions; reply with the text only |
 | **Convert to British English** | British spelling, vocabulary and punctuation (colour, organise, flat, 'single quotes'); nothing else changed; non-English text is translated |
 | **Convert to American English** | American spelling, vocabulary and punctuation (color, organize, apartment, "double quotes"); nothing else changed; non-English text is translated |
+| **Translate to French** | Natural, idiomatic French with French typography (« », space before : ; ? !); text already in French is only corrected; reply with the text only |
 | **Develop / provide content** | Expand the ideas with explanations, arguments and examples |
 | **Suggest research papers** | Recommend relevant papers with full references and explain why each one matters, checking on the web where possible |
 | **Explain** | Explain the text in plain words: summary, key ideas, technical terms, context, and a simple example where it helps |
@@ -44,10 +45,10 @@ The AI re-reads the whole chat at each message, so a long chat uses up your usag
 - Tick **Reply with the text only** for tasks that transform the text (for example "Turn this into a polite, concise email"), so the result can be copied directly and merges with the other rewriting functions when combined.
 
 **Combining functions.** In the toolbar popup, click several functions to select them (they turn orange with a ✓), then click **Send**. Everything goes to the AI in a single prompt:
-- several rewriting functions (Correct, Reformulate, Academic, Shorten, British or American English, and saved tasks marked "text only") are applied together to give **one** rewritten text, for example *Correct + British English* or *Academic + American English*;
+- several rewriting functions (Correct, Reformulate, Academic, Shorten, British or American English, Translate to French, and saved tasks marked "text only") are applied together to give **one** rewritten text, for example *Correct + British English* or *Academic + American English*;
 - the other functions (Develop, Papers, Explain, Ask, other saved tasks) each get their own section in the answer, after the rewritten text.
 
-British and American English can't be selected together. Your choice is remembered for next time. Double-click a function to send it alone right away. From the right-click menu, **Combine several functions…** opens the popup with your selection already in it.
+British English, American English and Translate to French can't be selected together. Your choice is remembered for next time. Double-click a function to send it alone right away. From the right-click menu, **Combine several functions…** opens the popup with your selection already in it.
 
 Keyboard shortcuts: `Alt+Shift+C` (correct) and `Alt+Shift+A` (ask). You can change them in `about:addons`: click the gear icon, then **Manage Extension Shortcuts**.
 
