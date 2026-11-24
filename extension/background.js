@@ -3,7 +3,7 @@
 
 const DEFAULT_SETTINGS = {
   urlTemplate: "https://claude.ai/new?q=%s",
-  openIn: "foreground", // "foreground" | "background"
+  openIn: "window", // "window" (floating mini window) | "foreground" | "background" (tabs)
   answerLanguage: "same",
   customInstructions: ""
 };
@@ -78,9 +78,60 @@ async function sendToClaude(action, text, question) {
   const encoded = encodeURIComponent(prompt);
   const fits = encoded.length <= MAX_URL_PROMPT && settings.urlTemplate.includes("%s");
   const url = fits ? settings.urlTemplate.replace("%s", encoded) : baseUrl(settings.urlTemplate);
-  await browser.tabs.create({ url, active: settings.openIn !== "background" });
+  if (settings.openIn === "window") {
+    await openFloatingWindow(url);
+  } else {
+    await browser.tabs.create({ url, active: settings.openIn !== "background" });
+  }
   return { pasteNeeded: !fits };
 }
+
+/* ---------- Floating Claude window ---------- */
+
+const WINDOW_WIDTH = 460;
+const WINDOW_HEIGHT = 720;
+
+/* Open claude.ai in a small window without toolbars, or reuse the one already open
+   (it keeps the size and position you gave it). */
+async function openFloatingWindow(url) {
+  const { claudeWindowId } = await browser.storage.session.get("claudeWindowId");
+  if (claudeWindowId != null) {
+    try {
+      const win = await browser.windows.get(claudeWindowId, { populate: true });
+      const tab = win.tabs && win.tabs[0];
+      if (tab) {
+        await browser.tabs.update(tab.id, { url });
+        await browser.windows.update(win.id, { focused: true, state: "normal" });
+        return;
+      }
+    } catch (_) {
+      /* window was closed */
+    }
+  }
+
+  // Place it at the top-right of the current Firefox window.
+  let left;
+  let top;
+  try {
+    const current = await browser.windows.getLastFocused();
+    left = Math.max(0, current.left + current.width - WINDOW_WIDTH - 24);
+    top = Math.max(0, current.top + 80);
+  } catch (_) {}
+
+  const win = await browser.windows.create({
+    url,
+    type: "popup",
+    width: WINDOW_WIDTH,
+    height: WINDOW_HEIGHT,
+    ...(left != null ? { left, top } : {})
+  });
+  await browser.storage.session.set({ claudeWindowId: win.id });
+}
+
+browser.windows.onRemoved.addListener(async (windowId) => {
+  const { claudeWindowId } = await browser.storage.session.get("claudeWindowId");
+  if (windowId === claudeWindowId) await browser.storage.session.remove("claudeWindowId");
+});
 
 function baseUrl(template) {
   return template.split("?")[0].replace("%s", "");

@@ -3,7 +3,7 @@
 const $ = (id) => document.getElementById(id);
 const DEFAULTS = {
   urlTemplate: "https://claude.ai/new?q=%s",
-  openIn: "foreground",
+  openIn: "window",
   answerLanguage: "same",
   customInstructions: ""
 };

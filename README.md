@@ -15,7 +15,9 @@ A Firefox extension that sends the text you select to **claude.ai**, together wi
 
 1. Sign in to claude.ai in Firefox once.
 2. Select text on any page, then right-click, open **Private Corrector → Claude**, and choose an action.
-3. A claude.ai tab opens with the prompt filled in. Send it, then copy Claude's answer with its copy button.
+3. A **small floating claude.ai window** opens at the top right with the prompt filled in. Check it, press Send yourself, then copy Claude's answer with its copy button.
+
+The same mini window is reused for every action (each action starts a new chat), and it keeps the size and position you give it. To use a normal tab instead, change it in the settings.
 
 Keyboard shortcuts: `Alt+Shift+C` (correct) and `Alt+Shift+A` (ask). You can change them in `about:addons`: click the gear icon, then **Manage Extension Shortcuts**.
 
@@ -44,7 +46,7 @@ The extension makes **no network requests**. All it does is open a claude.ai tab
 
 ## Settings
 
-- Open Claude in the foreground or in a background tab.
+- Open Claude in a floating mini window (default), a new tab, or a background tab.
 - Language of answers for Develop, Papers and Ask. By default it follows the language of the text.
 - Personal instructions added to every prompt.
 - Advanced: the claude.ai address used, in case the way prompts are filled in ever changes.
