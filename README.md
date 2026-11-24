@@ -7,6 +7,8 @@ A Firefox extension that sends the text you select to **claude.ai**, together wi
 | **Correct (minimal changes)** | Fix spelling, grammar, agreement and punctuation without rephrasing anything; reply with the corrected text only |
 | **Reformulate** | Rewrite more clearly, keeping the meaning, tone and length; reply with the text only |
 | **Make it more academic** | Rewrite in a formal research-paper style without inventing facts or citations; reply with the text only |
+| **Convert to British English** | British spelling, vocabulary and punctuation (colour, organise, flat, 'single quotes'); nothing else changed; non-English text is translated |
+| **Convert to American English** | American spelling, vocabulary and punctuation (color, organize, apartment, "double quotes"); nothing else changed; non-English text is translated |
 | **Develop / provide content** | Expand the ideas with explanations, arguments and examples |
 | **Suggest research papers** | Recommend relevant papers with full references and explain why each one matters, checking on the web where possible |
 | **Explain** | Explain the text in plain words: summary, key ideas, technical terms, context, and a simple example where it helps |

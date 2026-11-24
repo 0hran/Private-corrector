@@ -35,6 +35,32 @@ var PC_ACTIONS = [
       "rewritten text only, with no introduction or explanation, so that I can copy it directly."
   },
   {
+    id: "british",
+    title: "Convert to British English",
+    rewrite: true,
+    instructions:
+      "Convert the text inside the <text> tags to British English: British spelling (colour, " +
+      "organise, centre, travelled, defence), British vocabulary and expressions (flat, autumn, " +
+      "mobile phone) and British punctuation conventions (single quotation marks, punctuation " +
+      "outside quotes unless it belongs to the quotation). Change nothing else: keep my wording, " +
+      "sentence structure, tone and formatting, and fix only real errors. If the text is not in " +
+      "English, translate it into British English. Reply with the converted text only, with no " +
+      "introduction or explanation, so that I can copy it directly."
+  },
+  {
+    id: "american",
+    title: "Convert to American English",
+    rewrite: true,
+    instructions:
+      "Convert the text inside the <text> tags to American English: American spelling (color, " +
+      "organize, center, traveled, defense), American vocabulary and expressions (apartment, fall, " +
+      "cell phone) and American punctuation conventions (double quotation marks, periods and commas " +
+      "inside quotes). Change nothing else: keep my wording, sentence structure, tone and " +
+      "formatting, and fix only real errors. If the text is not in English, translate it into " +
+      "American English. Reply with the converted text only, with no introduction or explanation, " +
+      "so that I can copy it directly."
+  },
+  {
     id: "develop",
     title: "Develop / provide content",
     rewrite: false,
