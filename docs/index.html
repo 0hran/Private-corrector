@@ -202,7 +202,7 @@ footer { margin-top: 48px; color: var(--muted); font-size: 13.5px; }
     <header class="hero" id="overview">
       <p class="eyebrow">Technical guide</p>
       <h1>Private Corrector</h1>
-      <p class="lede">A browser extension for Chrome and Firefox that sends the text you select to Gemini, Claude or ChatGPT with ready-made instructions: correct with minimal changes, reformulate, shorten, make academic, convert to British or American English, explain, develop, find research papers, or run your own prompts. It uses your normal account on the AI website: no API key, no extra cost.</p>
+      <p class="lede">A browser extension for Chrome and Firefox that sends the text you select to Gemini, Claude or ChatGPT with ready-made instructions: correct with minimal changes, reformulate, shorten, make academic, convert to British or American English, translate to French, explain, develop, find research papers, or run your own prompts. It uses your normal account on the AI website: no API key, no extra cost.</p>
 
       <div class="downloads" id="download">
         <a class="dl" href="https://github.com/0hran/Private-corrector/releases/latest/download/private-corrector-chrome.zip">
@@ -277,7 +277,7 @@ footer { margin-top: 48px; color: var(--muted); font-size: 13.5px; }
       </ul>
 
       <h3>Combining functions</h3>
-      <p>Selected functions go to the AI in a single prompt. Rewriting functions (marked <span class="pill rw">rewrite</span> below) are applied together and give one rewritten text, for example <em>Correct + British English</em> or <em>Shorten + Academic</em>. The others each get their own section in the answer, after the rewritten text. British and American English can't be combined.</p>
+      <p>Selected functions go to the AI in a single prompt. Rewriting functions (marked <span class="pill rw">rewrite</span> below) are applied together and give one rewritten text, for example <em>Correct + British English</em> or <em>Shorten + Academic</em>. The others each get their own section in the answer, after the rewritten text. British English, American English and Translate to French can't be combined with each other.</p>
 
       <h3>Keyboard shortcuts</h3>
       <div class="table"><table>
@@ -301,13 +301,14 @@ footer { margin-top: 48px; color: var(--muted); font-size: 13.5px; }
           <tr><td>Shorten</td><td><span class="pill rw">rewrite</span></td><td>Cut by about a third (adjustable) while keeping key ideas, facts, figures and conclusions.</td></tr>
           <tr><td>Convert to British English</td><td><span class="pill rw">rewrite</span></td><td>colour, organise, centre, flat, ‘single quotes’. Nothing else changed; non-English text is translated.</td></tr>
           <tr><td>Convert to American English</td><td><span class="pill rw">rewrite</span></td><td>color, organize, center, apartment, “double quotes”, periods inside quotes.</td></tr>
+          <tr><td>Translate to French</td><td><span class="pill rw">rewrite</span></td><td>Natural, idiomatic French with French typography (« », a space before : ; ? !). Names, code and quotations stay as they are; text already in French is only corrected.</td></tr>
           <tr><td>Develop / provide content</td><td><span class="pill sec">section</span></td><td>Expand the ideas with explanations, arguments and examples; flag claims that need a source.</td></tr>
           <tr><td>Suggest research papers</td><td><span class="pill sec">section</span></td><td>Full references (authors, year, title, venue, DOI), why each is relevant. Asked to check on the web and never invent a reference. Still verify each one.</td></tr>
           <tr><td>Explain</td><td><span class="pill sec">section</span></td><td>Plain-words summary, key ideas, technical terms, implicit context, a simple example; points out errors or debatable claims.</td></tr>
           <tr><td>Ask a question…</td><td><span class="pill sec">section</span></td><td>Your own question or instruction about the selection.</td></tr>
         </tbody>
       </table></div>
-      <p>Rewriting functions keep the language of the text. The others answer in the language of the text unless you set another one in the settings. To change an instruction, edit <code>common/actions.js</code> (see <a href="#developers">For developers</a>).</p>
+      <p>Rewriting functions keep the language of the text, except Translate to French. The others answer in the language of the text unless you set another one in the settings. To change an instruction, edit <code>common/actions.js</code> (see <a href="#developers">For developers</a>).</p>
     </section>
 
     <section id="destinations">
