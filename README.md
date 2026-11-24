@@ -32,7 +32,9 @@ The window is reused for every new request and stays where you put it. Paper sug
 
 **Privacy on Gemini's free tier.** Google may use what you send, and Gemini's answers, to improve its products, and human reviewers may read it. In the EU, the UK and Switzerland, Google applies its paid-tier data terms to free use too. For confidential text, use a key from a Google Cloud project with billing enabled (paid tier), or one of the chat websites in private mode. See the [Gemini API terms](https://ai.google.dev/gemini-api/terms).
 
-**Model.** By default the extension uses the newest Gemini Flash model available to your key (fast, included in the free tier). You can choose another one in the settings (**Load the list**). If a model is overloaded (error 503, common on the free tier) or its free quota is used up, the extension retries automatically and then switches to another Gemini model; the window shows which model answered.
+**Model.** By default the extension uses the newest Gemini Flash model available to your key (fast, included in the free tier). You can choose another one in the settings (**Load the list**). If a model is overloaded (error 503, common on the free tier) or its free quota is used up, the extension retries automatically and then switches to another **free** Gemini model (Flash and Flash-Lite only, never Pro); the window shows which model answered. With a free key (no billing on its Google Cloud project) you cannot be charged anything.
+
+**If all the free models fail**, the extension switches to the website version: it opens the prompt on the **Gemini website** in a temporary chat, where you check it and press Send. You can choose Claude, ChatGPT or "just show the error" instead in the settings. The **Open in a chat website** button in the Private Corrector window does the same at any time.
 
 ### Using a chat website instead
 
@@ -88,7 +90,7 @@ In **automatic mode**, the extension sends your selected text and the instructio
 ## Settings
 
 - Send prompts to: Gemini API, automatic (default), or Claude, ChatGPT or Gemini (website).
-- Gemini API key and model (automatic by default).
+- Gemini API key and model (automatic by default), and which website to use if all the free Gemini models fail (Gemini by default).
 - Websites: private chat (default) or your default chat for each AI.
 - My saved tasks: add, edit, delete.
 - Websites: open the AI page in a floating mini window (default), a tab, or a background tab.

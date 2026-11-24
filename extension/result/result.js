@@ -18,8 +18,22 @@ async function settings() {
     answerLanguage: "same",
     shortenAmount: "about a third",
     customInstructions: "",
-    customTasks: []
+    customTasks: [],
+    geminiFallback: "gemini" // website used when the Gemini API fails: "gemini" | "claude" | "chatgpt" | "none"
   });
+}
+
+/* Fill in the same prompt on a chat website (private chat), where you press Send yourself. */
+async function openOnWebsite(provider) {
+  const res = await browser.runtime.sendMessage({
+    type: "pc-send",
+    actionIds: job.actionIds,
+    text: job.text,
+    question: job.question,
+    provider,
+    destination: "private"
+  });
+  return res;
 }
 
 /* ---------- Rendering ---------- */
@@ -97,8 +111,20 @@ async function run() {
     finish(out);
   } catch (err) {
     if (err.name === "AbortError") return;
-    showError((err.message || String(err)) + (err.code === "server" || err.code === "quota" ? "\n\nAll the available Gemini models were tried. Click Regenerate in a moment." : ""));
-    if (err.code === "key") $("setup").hidden = false;
+    const msg = err.message || String(err);
+    if (err.code === "key") {
+      showError(msg);
+      $("setup").hidden = false;
+    } else if (s.geminiFallback !== "none") {
+      // Every free Gemini model failed (or no connection): switch to the website version.
+      const name = pcProvider(s.geminiFallback).name;
+      showError(`${msg}\n\nAll the free Gemini models were tried, so the prompt was opened on ${name}'s website instead (private chat): check it there and press Send. You can also click Regenerate later.`);
+      setBusy(false);
+      const res = await openOnWebsite(s.geminiFallback).catch(() => null);
+      if (res && !res.filled) showError(`${msg}\n\nThe prompt was opened on ${name}'s website and copied to your clipboard: click in its message box, press Ctrl+V, then Send.`);
+    } else {
+      showError(msg + "\n\nAll the free Gemini models were tried. Click Regenerate in a moment.");
+    }
   } finally {
     setBusy(false);
     controller = null;
@@ -143,6 +169,15 @@ $("diff").addEventListener("click", () => {
 });
 
 $("regen").addEventListener("click", run);
+$("website").addEventListener("click", async () => {
+  if (controller) controller.abort();
+  const s = await settings();
+  const provider = s.geminiFallback !== "none" ? s.geminiFallback : "gemini";
+  const res = await openOnWebsite(provider);
+  if (res && !res.filled) {
+    showError(`The prompt is on your clipboard: click in ${pcProvider(provider).name}'s message box and press Ctrl+V.`);
+  }
+});
 $("stop").addEventListener("click", () => controller && controller.abort());
 $("settings").addEventListener("click", () => browser.runtime.openOptionsPage());
 

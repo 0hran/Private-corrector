@@ -62,13 +62,18 @@ var PCGemini = (function () {
     return m ? parseFloat(m[1]) : 0;
   }
 
+  /* Models included in the Gemini API free tier: the Flash and Flash-Lite families (not Pro). */
+  function isFreeModel(id) {
+    return /flash/i.test(id) && !/8b|thinking|pro/i.test(id);
+  }
+
   /*
    * Flash models in order of preference (fast and part of the free tier):
    * stable Flash (newest first), then preview Flash, then Flash-Lite.
    */
   function rankFlash(models) {
     const byVersion = (a, b) => version(b.id) - version(a.id) || a.id.length - b.id.length;
-    const flash = models.filter((m) => /flash/i.test(m.id) && !/8b|thinking/i.test(m.id));
+    const flash = models.filter((m) => isFreeModel(m.id));
     const isLite = (m) => /lite/i.test(m.id);
     const isPreview = (m) => /preview|exp|latest/i.test(m.id);
     const groups = [
@@ -103,8 +108,10 @@ var PCGemini = (function () {
         if (err.code === "key") throw err;
       }
     }
-    const list = chosen && chosen !== "auto" ? [chosen, ...ranked.filter((id) => id !== chosen)] : ranked;
-    return list.slice(0, 5);
+    // Fallbacks are free models only; a model you chose yourself is tried first.
+    const free = ranked.filter(isFreeModel);
+    const list = chosen && chosen !== "auto" ? [chosen, ...free.filter((id) => id !== chosen)] : free;
+    return (list.length ? list : [FALLBACK_MODEL]).slice(0, 5);
   }
 
   async function resolveModel(apiKey, chosen) {
@@ -210,5 +217,5 @@ var PCGemini = (function () {
     return { text, finishReason, blocked, model, sources: [...sources].map(([url, title]) => ({ url, title })) };
   }
 
-  return { generate, generateWithFallback, resolveModel, resolveModels, listModels, pickFlash, rankFlash, GeminiError };
+  return { isFreeModel, generate, generateWithFallback, resolveModel, resolveModels, listModels, pickFlash, rankFlash, GeminiError };
 })();

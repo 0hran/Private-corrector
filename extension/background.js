@@ -15,7 +15,8 @@ const DEFAULT_SETTINGS = {
   customInstructions: "",
   customTasks: [], // saved tasks: [{ id, title, prompt, rewrite }]
   geminiApiKey: "",
-  geminiModel: "auto"
+  geminiModel: "auto",
+  geminiFallback: "gemini" // website used when the Gemini API fails: "gemini" | "claude" | "chatgpt" | "none"
 };
 const API_PROVIDER = "gemini-api";
 

@@ -43,7 +43,17 @@
       <select id="geminiModel"><option value="auto">Automatic: the newest Gemini Flash model</option></select>
       <button id="loadModels" class="btn" type="button">Load the list</button>
     </div>
-    <p class="hint">Flash models are fast and included in the free tier. If you hit the free-tier limit, try another model.</p>
+    <p class="hint">Flash models are fast and included in the free tier. If a model is overloaded or its free quota is used up, the extension tries the other <strong>free</strong> models (Flash and Flash-Lite, never Pro).
+      With a free key (no billing on its Google Cloud project), you cannot be charged anything.</p>
+
+    <label for="geminiFallback">If all the free Gemini models fail</label>
+    <select id="geminiFallback">
+      <option value="gemini">Open the prompt on the Gemini website (temporary chat)</option>
+      <option value="claude">Open the prompt on Claude (incognito chat)</option>
+      <option value="chatgpt">Open the prompt on ChatGPT (temporary chat)</option>
+      <option value="none">Just show the error</option>
+    </select>
+    <p class="hint">The prompt is filled in on the website, where you check it and press Send. The Private Corrector window also has an <em>Open in a chat website</em> button to do this at any time.</p>
 
     <h2>Chat websites</h2>
     <p class="hint">Used when you choose Claude, ChatGPT or Gemini (website) above or in the popup. Make sure you are signed in to them in Firefox.</p>

@@ -5,6 +5,7 @@ const DEFAULTS = {
   provider: "gemini-api",
   geminiApiKey: "",
   geminiModel: "auto",
+  geminiFallback: "gemini",
   openIn: "window",
   answerLanguage: "same",
   shortenAmount: "about a third",
