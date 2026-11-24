@@ -16,12 +16,14 @@
       <button id="grant" class="btn primary">Allow</button>
     </section>
 
-    <label for="conversation">Each new prompt</label>
-    <select id="conversation">
-      <option value="same">Goes into the conversation already open in the Claude page</option>
-      <option value="new">Starts a new chat in the same Claude page</option>
-    </select>
-    <p class="hint">Either way, only one Claude page is used. In the same conversation, Claude also sees your earlier texts, and long conversations use up your usage limits faster: start a new chat in that page from time to time.</p>
+    <label for="pcChatUrl">Private Corrector conversation</label>
+    <div class="row">
+      <input id="pcChatUrl" type="text" spellcheck="false" placeholder="Saved automatically after your first prompt">
+      <button id="forget" class="btn" type="button">Forget</button>
+    </div>
+    <p class="hint">Every prompt goes into this one conversation, whatever the Claude page is showing. It is saved automatically when you send your first prompt.
+      You can also paste the address of an existing chat (https://claude.ai/chat/…). <strong>Forget</strong> starts a fresh one at the next action;
+      do that from time to time, because Claude re-reads the whole conversation at each message, which uses up your usage limits faster.</p>
 
     <label for="openIn">Open the Claude page</label>
     <select id="openIn">

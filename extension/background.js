@@ -3,7 +3,7 @@
 
 const DEFAULT_SETTINGS = {
   newChatUrl: "https://claude.ai/new",
-  conversation: "same", // "same" = keep using the open chat | "new" = new chat each time
+  pcChatUrl: "", // address of the "Private Corrector" conversation, saved automatically
   openIn: "window", // "window" (floating mini window) | "foreground" | "background" (tabs)
   answerLanguage: "same",
   customInstructions: ""
@@ -67,12 +67,14 @@ async function run(action, text, tab, frames) {
   }
 }
 
-/* ---------- Sending to the Claude page ---------- */
+/* ---------- Sending to the Private Corrector conversation ---------- */
 
 /*
- * Build the prompt, copy it (as a backup), then put it in Claude's message box.
- * One Claude page is reused every time. With "same conversation", the prompt goes into
- * the chat already open there; otherwise that page starts a new chat.
+ * Build the prompt, copy it (as a backup), then put it in the message box of the
+ * dedicated "Private Corrector" conversation on claude.ai. The extension always goes
+ * back to that conversation, whatever the Claude page is showing.
+ * The conversation is recognised by its address (saved in pcChatUrl). Until it exists,
+ * a new chat is opened, and its address is saved as soon as you send the first prompt.
  * The prompt is only filled in: you press Send yourself.
  */
 async function sendToClaude(action, text, question) {
@@ -80,21 +82,73 @@ async function sendToClaude(action, text, question) {
   const prompt = pcBuildPrompt(action, text, settings, question);
   await copyToClipboard(prompt);
 
-  let tab = await getClaudeTab();
-  const onClaude = tab && /^https:\/\/claude\.ai\//.test(tab.url || "");
+  const chatUrl = settings.pcChatUrl;
+  const target = chatUrl || settings.newChatUrl;
+  let tab = (await getClaudeTab()) || (chatUrl && (await findOpenTab(chatUrl)));
 
-  if (tab && onClaude && settings.conversation === "same") {
-    await focusTab(tab);
-  } else if (tab) {
-    await browser.tabs.update(tab.id, { url: settings.newChatUrl });
-    await focusTab(tab);
+  if (!tab) {
+    tab = await openClaudePage(settings, target);
     await waitForLoad(tab.id);
   } else {
-    tab = await openClaudePage(settings);
-    await waitForLoad(tab.id);
+    await browser.storage.session.set({ claudeTabId: tab.id });
+    await focusTab(tab);
+    if (!chatUrl || !sameChat(tab.url, chatUrl)) {
+      await browser.tabs.update(tab.id, { url: target });
+      await waitForLoad(tab.id);
+    }
   }
+
+  if (chatUrl) {
+    // If the conversation no longer exists, claude.ai sends us elsewhere: start a new one.
+    const now = await browser.tabs.get(tab.id);
+    if (!sameChat(now.url, chatUrl)) {
+      await browser.storage.local.remove("pcChatUrl");
+      await browser.tabs.update(tab.id, { url: settings.newChatUrl });
+      await waitForLoad(tab.id);
+      await armCapture(tab.id);
+      notify("The Private Corrector conversation could not be found, so a new one is being started.");
+    }
+  } else {
+    await armCapture(tab.id);
+  }
+
   return { filled: await fillPrompt(tab.id, prompt) };
 }
+
+function chatKey(url) {
+  try {
+    const u = new URL(url);
+    return u.origin + u.pathname.replace(/\/$/, "");
+  } catch (_) {
+    return "";
+  }
+}
+
+function sameChat(a, b) {
+  return Boolean(a && b) && chatKey(a) === chatKey(b);
+}
+
+/* After a Firefox restart, reuse a tab already showing the conversation. */
+async function findOpenTab(chatUrl) {
+  const tabs = await browser.tabs.query({ url: "https://claude.ai/*" });
+  return tabs.find((t) => sameChat(t.url, chatUrl)) || null;
+}
+
+/* Wait for the new chat to get its address (when you send the first prompt), then save it. */
+async function armCapture(tabId) {
+  await browser.storage.session.set({ captureTabId: tabId });
+}
+
+browser.tabs.onUpdated.addListener(async (tabId, change) => {
+  if (!change.url) return;
+  const m = change.url.match(/^https:\/\/claude\.ai\/chat\/[0-9a-f-]{16,}/i);
+  if (!m) return;
+  const { captureTabId } = await browser.storage.session.get("captureTabId");
+  if (tabId !== captureTabId) return;
+  await browser.storage.session.remove("captureTabId");
+  await browser.storage.local.set({ pcChatUrl: m[0] });
+  notify('This chat is now your Private Corrector conversation. Rename it "Private Corrector" in claude.ai (chat title menu → Rename) so you can find it easily.');
+});
 
 /* The Claude page opened by the extension, if it is still open. */
 async function getClaudeTab() {
@@ -116,8 +170,7 @@ const WINDOW_WIDTH = 460;
 const WINDOW_HEIGHT = 720;
 
 /* Open the Claude page: a small floating window (default) or a tab. */
-async function openClaudePage(settings) {
-  const url = settings.newChatUrl;
+async function openClaudePage(settings, url) {
   let tab;
   if (settings.openIn === "window") {
     let pos = {};

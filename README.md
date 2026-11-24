@@ -15,14 +15,17 @@ A Firefox extension that sends the text you select to **claude.ai**, together wi
 
 1. Sign in to claude.ai in Firefox once.
 2. Select text on any page, then right-click, open **Private Corrector → Claude**, and choose an action.
-3. The extension puts the prompt in the message box of **your Claude page**. Check it, press Send yourself, then copy Claude's answer with its copy button.
+3. The extension puts the prompt in the message box of your **Private Corrector conversation** on claude.ai. Check it, press Send yourself, then copy Claude's answer with its copy button.
 
-**One Claude page only.** The first time, a small floating claude.ai window opens at the top right. After that, the extension always uses that same page: it brings it to the front and fills in the next prompt, in the **conversation already open there**. No new windows, tabs or chats pile up. You can:
-- start a new chat in that window yourself whenever you want (a long conversation uses up your usage limits faster, and Claude also sees your earlier texts);
-- choose in the settings to start a new chat in that same page for every action;
-- open the page in a normal tab instead of a floating window.
+**One conversation, always the same.**
+- The first time, a small floating claude.ai window opens on a new chat. When you send that first prompt, the extension saves the chat's address as your Private Corrector conversation and shows a notification.
+- **Rename the chat "Private Corrector" once** in claude.ai (chat title menu, then Rename) so you can recognise it in your chat list. The extension finds the chat by its address, so the name is just for you.
+- From then on, every action brings that window to the front and goes back to this conversation, even if you opened another chat in the window in the meantime. Nothing else piles up: no new windows, tabs or chats.
+- If you close the window, or after a Firefox restart, the next action reopens the same conversation (or reuses a tab that already shows it).
+- If you delete the conversation on claude.ai, the next action starts a new one and saves it the same way.
+- In the settings you can see the saved address, paste the address of another chat to use instead, or click **Forget** to start a fresh one.
 
-If you close the page, the next action opens a new one.
+Claude re-reads the whole conversation at each message, so a very long Private Corrector conversation uses up your usage limits faster and mixes in your earlier texts. Click **Forget** in the settings now and then to start a fresh one.
 
 Keyboard shortcuts: `Alt+Shift+C` (correct) and `Alt+Shift+A` (ask). You can change them in `about:addons`: click the gear icon, then **Manage Extension Shortcuts**.
 
@@ -52,10 +55,10 @@ The extension makes **no network requests**. It only opens your Claude page and 
 
 ## Settings
 
-- Each new prompt: in the conversation already open (default) or in a new chat, always in the same page.
+- The Private Corrector conversation: saved automatically; you can paste another chat's address or click Forget to start a new one.
 - Open the Claude page in a floating mini window (default), a tab, or a background tab.
 - Language of answers for Develop, Papers and Ask. By default it follows the language of the text.
 - Personal instructions added to every prompt.
-- Advanced: the address used to start a new chat, for example a Claude project page.
+- Advanced: the address used to start the conversation, for example a Claude project page so it is created in that project.
 
 To change the wording of an action's instructions, edit `extension/common/actions.js`, then click **Reload** in `about:debugging`.

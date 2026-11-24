@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Private Corrector",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Select text and send it to claude.ai to correct it with minimal changes, reformulate it, make it academic, develop it, find research papers or ask anything.",
   "icons": {
     "48": "icons/icon.svg",
