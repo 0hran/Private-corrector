@@ -27,7 +27,7 @@ Claude re-reads the whole chat at each message, so close the window now and then
 
 Keyboard shortcuts: `Alt+Shift+C` (correct) and `Alt+Shift+A` (ask). You can change them in `about:addons`: click the gear icon, then **Manage Extension Shortcuts**.
 
-The **toolbar button** opens a popup where you can paste text and use the same actions. Use it on pages where extensions can't run, such as the PDF viewer.
+The **toolbar button** opens a popup with the same actions. Text you selected on the page before clicking the icon is pasted into the popup automatically, so you can check or edit it before choosing an action. You can also paste or type text yourself, for example on pages where extensions can't run, such as the PDF viewer.
 
 The prompt is **always copied to your clipboard** as well. If the extension can't fill in the message box (for example after a claude.ai redesign), a notification tells you: click in the box and press **Ctrl+V**. Very long texts may show up as a "pasted text" attachment, as they do when you paste them yourself.
 
