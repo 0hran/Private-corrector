@@ -2,10 +2,7 @@
 
 const $ = (id) => document.getElementById(id);
 const DEFAULTS = {
-  provider: "gemini-api",
-  geminiApiKey: "",
-  geminiModel: "auto",
-  geminiFallback: "gemini",
+  provider: "gemini",
   openIn: "window",
   answerLanguage: "same",
   shortenAmount: "about a third",
@@ -50,9 +47,6 @@ buildChatRows();
 /* ---------- Load / save ---------- */
 
 function fill(s) {
-  if (s.geminiModel && s.geminiModel !== "auto" && !$("geminiModel").querySelector(`option[value="${CSS.escape(s.geminiModel)}"]`)) {
-    $("geminiModel").add(new Option(s.geminiModel, s.geminiModel));
-  }
   for (const k of FIELDS) $(k).value = s[k];
   const dest = s.destination === "chat" ? "chat" : "private";
   document.querySelector(`input[name=destination][value=${dest}]`).checked = true;
@@ -62,7 +56,7 @@ function fill(s) {
 
 async function load() {
   const s = { ...DEFAULTS, destination: "private", customTasks: [], ...(await browser.storage.local.get(null)) };
-  if (!PC_PROVIDERS[s.provider] && s.provider !== "gemini-api") s.provider = "gemini-api";
+  if (!PC_PROVIDERS[s.provider]) s.provider = "gemini";
   fill(s);
   tasks = s.customTasks || [];
   renderTasks();
@@ -95,37 +89,10 @@ $("save").addEventListener("click", async () => {
 });
 
 $("reset").addEventListener("click", async () => {
-  // Saved tasks and the Gemini API key are kept.
-  const keep = FIELDS.filter((k) => k !== "geminiApiKey");
-  await browser.storage.local.remove([...keep, "destination", "chatUrls", "chatUrl", "newChatUrl", "incognito", "pcChatUrl", "urlTemplate", "conversation"]);
-  fill({ ...DEFAULTS, geminiApiKey: $("geminiApiKey").value, destination: "private", chatUrls: {} });
-  status("Defaults restored ✓ (your saved tasks and API key are kept)");
-});
-
-/* ---------- Gemini API ---------- */
-
-$("toggleKey").addEventListener("click", () => {
-  const show = $("geminiApiKey").type === "password";
-  $("geminiApiKey").type = show ? "text" : "password";
-  $("toggleKey").textContent = show ? "Hide" : "Show";
-});
-
-$("loadModels").addEventListener("click", async () => {
-  const key = $("geminiApiKey").value.trim();
-  if (!key) return status("✗ Paste your Gemini API key first.");
-  status("Loading the models…");
-  try {
-    const models = await PCGemini.listModels(key);
-    const current = $("geminiModel").value;
-    const auto = PCGemini.pickFlash(models);
-    $("geminiModel").textContent = "";
-    $("geminiModel").add(new Option(`Automatic: the newest Gemini Flash model (now ${auto})`, "auto"));
-    for (const m of models) $("geminiModel").add(new Option(`${m.name} (${m.id})`, m.id));
-    $("geminiModel").value = [...$("geminiModel").options].some((o) => o.value === current) ? current : "auto";
-    status(`✓ The key works: ${models.length} models available. Choose one and click Save.`);
-  } catch (err) {
-    status("✗ " + (err.message || err));
-  }
+  // Saved tasks are kept.
+  await browser.storage.local.remove([...FIELDS, "destination", "chatUrls", "chatUrl", "newChatUrl", "incognito", "pcChatUrl", "urlTemplate", "conversation"]);
+  fill({ ...DEFAULTS, destination: "private", chatUrls: {} });
+  status("Defaults restored ✓ (your saved tasks are kept)");
 });
 
 /* ---------- Saved tasks ---------- */

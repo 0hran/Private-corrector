@@ -1,35 +1,27 @@
-/*
- * Background script: reads the selection and either
- *  - runs it automatically with the Gemini API, showing the answer in the Private Corrector window (default), or
- *  - fills the prompt in on Claude, ChatGPT or Gemini's website, where you press Send.
- */
+/* Background script: reads the selection, builds the prompt, fills it in on Claude, ChatGPT or Gemini. */
 "use strict";
 
 const DEFAULT_SETTINGS = {
-  provider: "gemini-api", // "gemini-api" (automatic, default) | "claude" | "chatgpt" | "gemini" (websites)
+  provider: "gemini", // "gemini" (default) | "claude" | "chatgpt"
   destination: "private", // "private" (incognito / temporary chat, default) | "chat" (your default chat)
   chatUrls: {}, // your default chat for each provider: { claude: "https://claude.ai/chat/…", … }
   openIn: "window", // "window" (floating mini window) | "foreground" | "background" (tabs)
   answerLanguage: "same",
   shortenAmount: "about a third",
   customInstructions: "",
-  customTasks: [], // saved tasks: [{ id, title, prompt, rewrite }]
-  geminiApiKey: "",
-  geminiModel: "auto",
-  geminiFallback: "gemini" // website used when the Gemini API fails: "gemini" | "claude" | "chatgpt" | "none"
+  customTasks: [] // saved tasks: [{ id, title, prompt, rewrite }]
 };
-const API_PROVIDER = "gemini-api";
 
-function providerName(id) {
-  return id === API_PROVIDER ? "Gemini (automatic)" : pcProvider(id).name;
-}
-
-// Version 6: the Gemini API (automatic) becomes the default AI, once.
-browser.storage.local.get("settingsVersion").then(async ({ settingsVersion }) => {
-  if (!settingsVersion || settingsVersion < 6) {
-    await browser.storage.local.set({ provider: API_PROVIDER, settingsVersion: 6 });
-    createMenus();
-  }
+// Version 7: the Gemini API mode was removed. Delete its settings (including the API key)
+// and keep Gemini, on its website, as the default AI.
+browser.storage.local.get(["settingsVersion", "provider"]).then(async ({ settingsVersion, provider }) => {
+  if (settingsVersion && settingsVersion >= 7) return;
+  await browser.storage.local.remove(["geminiApiKey", "geminiModel", "geminiAutoModel", "geminiAutoModels", "geminiFallback"]);
+  const update = { settingsVersion: 7 };
+  if (!provider || provider === "gemini-api" || !settingsVersion) update.provider = "gemini";
+  await browser.storage.local.set(update);
+  await browser.storage.session.remove(["pcJob", "resultTabId"]);
+  createMenus();
 });
 
 async function getSettings() {
@@ -37,7 +29,7 @@ async function getSettings() {
   // Settings from earlier versions.
   if (s.destination === "incognito") s.destination = "private";
   if (s.chatUrl && !s.chatUrls.claude) s.chatUrls = { ...s.chatUrls, claude: s.chatUrl };
-  if (s.provider !== API_PROVIDER && !PC_PROVIDERS[s.provider]) s.provider = API_PROVIDER;
+  if (!PC_PROVIDERS[s.provider]) s.provider = "gemini";
   return s;
 }
 
@@ -47,7 +39,7 @@ async function createMenus() {
   const s = await getSettings();
   await browser.menus.removeAll();
   const ctx = ["selection"];
-  browser.menus.create({ id: "pc-root", title: `Private Corrector → ${providerName(s.provider)}`, contexts: ctx });
+  browser.menus.create({ id: "pc-root", title: `Private Corrector → ${pcProvider(s.provider).name}`, contexts: ctx });
   for (const action of PC_ACTIONS) {
     browser.menus.create({ id: "pc-" + action.id, parentId: "pc-root", title: action.title, contexts: ctx });
   }
@@ -79,34 +71,28 @@ browser.menus.onClicked.addListener(async (info, tab) => {
   const action = pcGetAction(String(info.menuItemId).slice(3), customTasks);
   if (!action) return;
   const frames = info.frameId != null ? [info.frameId] : undefined;
-  const sel = await readSelection(tab, frames);
-  const text = sel.text || info.selectionText || "";
-  await run(action, text, tab, frames, { tabId: tab.id, frameId: sel.frameId ?? info.frameId ?? 0 });
+  const text = (await readSelection(tab, frames)) || info.selectionText || "";
+  await run(action, text, tab, frames);
 });
 
 browser.commands.onCommand.addListener(async (command) => {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
   if (!tab) return;
   const action = pcGetAction(command === "ask-selection" ? "ask" : "correct");
-  const sel = await readSelection(tab);
-  if (!sel.text) {
+  const text = await readSelection(tab);
+  if (!text) {
     notify("Select some text first.");
     return;
   }
-  await run(action, sel.text, tab, [sel.frameId], { tabId: tab.id, frameId: sel.frameId });
+  await run(action, text, tab);
 });
 
 browser.runtime.onMessage.addListener(async (msg) => {
-  // From the popup: { type: "pc-send", actionIds: [...], text, question, provider, destination, source }
+  // From the popup: { type: "pc-send", actionIds: [...], text, question, provider, destination }
   if (msg && msg.type === "pc-send") {
-    const s = await getSettings();
-    const provider = msg.provider || s.provider;
-    if (provider === API_PROVIDER) {
-      await openResultWindow({ actionIds: msg.actionIds, text: msg.text, question: msg.question, source: msg.source || null });
-      return { filled: true, api: true };
-    }
-    const actions = (msg.actionIds || []).map((id) => pcGetAction(id, s.customTasks)).filter(Boolean);
-    return sendToAI(actions, msg.text, msg.question, { provider, destination: msg.destination });
+    const { customTasks } = await getSettings();
+    const actions = (msg.actionIds || []).map((id) => pcGetAction(id, customTasks)).filter(Boolean);
+    return sendToAI(actions, msg.text, msg.question, { provider: msg.provider, destination: msg.destination });
   }
   // From the settings page: address of a chat open for this provider.
   if (msg && msg.type === "pc-current-chat") {
@@ -121,17 +107,12 @@ browser.runtime.onMessage.addListener(async (msg) => {
 
 /* ---------- Steps ---------- */
 
-async function run(action, text, tab, frames, source) {
+async function run(action, text, tab, frames) {
   if (!text.trim()) return;
   let question = "";
   if (action.needsQuestion) {
     question = await askQuestion(tab, frames);
     if (question === null) return; // cancelled
-  }
-  const { provider } = await getSettings();
-  if (provider === API_PROVIDER) {
-    await openResultWindow({ actionIds: [action.id], text, question, source });
-    return;
   }
   const result = await sendToAI(action, text, question);
   if (!result.filled) {
@@ -139,40 +120,7 @@ async function run(action, text, tab, frames, source) {
   }
 }
 
-/* ---------- Automatic mode: the Private Corrector window ---------- */
-
-const RESULT_URL = browser.runtime.getURL("result/result.html");
-const RESULT_WIDTH = 480;
-const RESULT_HEIGHT = 640;
-
-/* Show the job in the Private Corrector window (reused), which runs it with the Gemini API. */
-async function openResultWindow(job) {
-  await browser.storage.session.set({ pcJob: { ...job, id: Date.now() } });
-  const { resultTabId } = await browser.storage.session.get("resultTabId");
-  if (resultTabId != null) {
-    try {
-      const tab = await browser.tabs.get(resultTabId);
-      if (tab.url && tab.url.startsWith(RESULT_URL)) {
-        await focusTab(tab); // the window picks up the new job by itself
-        return;
-      }
-    } catch (_) {
-      /* closed */
-    }
-  }
-  let pos = {};
-  try {
-    const current = await browser.windows.getLastFocused();
-    pos = {
-      left: Math.max(0, current.left + current.width - RESULT_WIDTH - 24),
-      top: Math.max(0, current.top + 80)
-    };
-  } catch (_) {}
-  const win = await browser.windows.create({ url: RESULT_URL, type: "popup", width: RESULT_WIDTH, height: RESULT_HEIGHT, ...pos });
-  await browser.storage.session.set({ resultTabId: win.tabs[0].id });
-}
-
-/* ---------- Website mode: sending to the AI window ---------- */
+/* ---------- Sending to the AI window ---------- */
 
 /*
  * Build the prompt, copy it (as a backup), then put it in the message box of the AI
@@ -442,11 +390,11 @@ async function readSelection(tab, frameIds) {
         return String(window.getSelection() || "");
       }
     });
-    const found = results.find((r) => r.result && r.result.trim());
-    return found ? { text: found.result, frameId: found.frameId } : { text: "", frameId: 0 };
+    const found = results.map((r) => r.result).find((t) => t && t.trim());
+    return found || "";
   } catch (_) {
     // Pages where extensions cannot run (about:, PDF viewer, addons.mozilla.org).
-    return { text: "", frameId: 0 };
+    return "";
   }
 }
 

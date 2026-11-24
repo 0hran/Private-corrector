@@ -8,55 +8,22 @@
 <body>
   <main>
     <h1><span class="logo"></span> Private Corrector settings</h1>
-    <p class="hint">By default, the extension sends your selected text to the <strong>Gemini API</strong> automatically and shows the answer in the Private Corrector window.
-      You can choose instead to fill in the prompt on Claude, ChatGPT or Gemini's website (with your normal account), where you press Send yourself.</p>
+    <p class="hint">The extension puts your selected text and the instructions for the action in the message box of Claude, ChatGPT or Gemini. You press Send yourself.
+      It uses your normal account on that site (free or paid): no API key, no extra cost.</p>
 
     <section id="perm" class="warn" hidden>
       Firefox has not yet allowed this extension to fill in the message box on <span id="permSites">the AI sites</span>.
       <button id="grant" class="btn primary">Allow</button>
     </section>
 
-    <h2>AI assistant</h2>
-    <label for="provider">Send prompts to</label>
+    <h2>Where prompts go</h2>
+    <label for="provider">AI assistant</label>
     <select id="provider">
-      <option value="gemini-api">Gemini API: automatic, answer in the Private Corrector window (default)</option>
+      <option value="gemini">Gemini (gemini.google.com), default</option>
       <option value="claude">Claude (claude.ai)</option>
       <option value="chatgpt">ChatGPT (chatgpt.com)</option>
-      <option value="gemini">Gemini (gemini.google.com)</option>
     </select>
-    <p class="hint">You can pick another one for a single prompt in the toolbar popup (<em>Send to</em>).</p>
-
-    <h2>Gemini API (automatic mode)</h2>
-    <label for="geminiApiKey">Gemini API key</label>
-    <div class="row">
-      <input id="geminiApiKey" type="password" placeholder="AIza…" autocomplete="off" spellcheck="false">
-      <button id="toggleKey" class="btn" type="button">Show</button>
-    </div>
-    <p class="hint">Free: open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio → API keys</a>, sign in, click <strong>Create API key</strong> and paste it here.
-      It is stored only in this browser and sent only to Google's Gemini API.</p>
-    <p class="hint warnline"><strong>Privacy on the free tier:</strong> Google may use what you send (and Gemini's answers) to improve its products, and human reviewers may read it.
-      In the EU, the UK and Switzerland, Google applies its paid-tier data terms to free use too. To keep confidential text private, use a key from a Google Cloud project with billing enabled (paid tier), or a chat website in private mode.
-      See <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener">Gemini API terms</a>.</p>
-
-    <label for="geminiModel">Model</label>
-    <div class="row">
-      <select id="geminiModel"><option value="auto">Automatic: the newest Gemini Flash model</option></select>
-      <button id="loadModels" class="btn" type="button">Load the list</button>
-    </div>
-    <p class="hint">Flash models are fast and included in the free tier. If a model is overloaded or its free quota is used up, the extension tries the other <strong>free</strong> models (Flash and Flash-Lite, never Pro).
-      With a free key (no billing on its Google Cloud project), you cannot be charged anything.</p>
-
-    <label for="geminiFallback">If all the free Gemini models fail</label>
-    <select id="geminiFallback">
-      <option value="gemini">Open the prompt on the Gemini website (temporary chat)</option>
-      <option value="claude">Open the prompt on Claude (incognito chat)</option>
-      <option value="chatgpt">Open the prompt on ChatGPT (temporary chat)</option>
-      <option value="none">Just show the error</option>
-    </select>
-    <p class="hint">The prompt is filled in on the website, where you check it and press Send. The Private Corrector window also has an <em>Open in a chat website</em> button to do this at any time.</p>
-
-    <h2>Chat websites</h2>
-    <p class="hint">Used when you choose Claude, ChatGPT or Gemini (website) above or in the popup. Make sure you are signed in to them in Firefox.</p>
+    <p class="hint">Make sure you are signed in to it in Firefox. You can pick another one for a single prompt in the toolbar popup (<em>Send to</em>).</p>
 
     <label class="check"><input type="radio" name="destination" value="private"> Private chat (default)</label>
     <p class="hint">A new chat that is not saved in your history: Claude's <em>incognito chat</em>, ChatGPT's or Gemini's <em>temporary chat</em>.
@@ -114,7 +81,6 @@
     </div>
   </main>
   <script src="../common/providers.js"></script>
-  <script src="../common/gemini.js"></script>
   <script src="options.js"></script>
 </body>
 </html>
