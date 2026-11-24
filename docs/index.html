@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Download and documentation for Private Corrector, a Chrome and Firefox extension that sends selected text to Gemini, Claude or ChatGPT.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Private Corrector Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,600&display=swap">
+<style>
+/* Layout: technical manual. Sticky table of contents on the left (desktop), one reading column on the right; stacks on phones. */
+:root {
+  --bg: #fbfaf8;
+  --surface: #ffffff;
+  --sunken: #f2efea;
+  --fg: #1d1b19;
+  --muted: #625d57;
+  --line: #e2ddd5;
+  --accent: #b5532f;
+  --accent-soft: #f7e6de;
+  --ok: #2f6b3e;
+  --warn-bg: #fbf1dc;
+  --warn-fg: #6b4b0f;
+  --code-bg: #f4f1ec;
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #171615; --surface: #1f1d1b; --sunken: #262421; --fg: #ece8e2; --muted: #a59e95;
+    --line: #36322e; --accent: #e3825d; --accent-soft: #3a2820; --ok: #8fd19e;
+    --warn-bg: #3a3020; --warn-fg: #f0d49a; --code-bg: #24221f; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #171615; --surface: #1f1d1b; --sunken: #262421; --fg: #ece8e2; --muted: #a59e95;
+  --line: #36322e; --accent: #e3825d; --accent-soft: #3a2820; --ok: #8fd19e;
+  --warn-bg: #3a3020; --warn-fg: #f0d49a; --code-bg: #24221f; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.65 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+.wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 56px;
+  padding-block: 48px 96px;
+}
+@media (max-width: 860px) {
+  .wrap { grid-template-columns: minmax(0, 1fr); gap: 24px; padding-block: 28px 64px; }
+}
+
+/* Table of contents */
+nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; font-size: 14px; }
+nav.toc .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; font-weight: 600; }
+nav.toc .brand img { width: 28px; height: 28px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: toc; }
+nav.toc li a {
+  display: block; padding: 5px 10px; border-radius: 6px; color: var(--muted); text-decoration: none;
+  border-left: 2px solid transparent;
+}
+nav.toc li a:hover { color: var(--fg); background: var(--sunken); }
+nav.toc .ver { margin-top: 20px; color: var(--muted); font-size: 12.5px; font-family: var(--font-mono); }
+@media (max-width: 860px) {
+  nav.toc { position: static; }
+  nav.toc ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  nav.toc .ver { display: none; }
+}
+
+main { min-width: 0; }
+header.hero { margin-bottom: 40px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin: 0 0 10px; }
+h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(2.1rem, 5vw, 3rem); line-height: 1.1; margin: 0 0 16px; text-wrap: balance; letter-spacing: -.01em; }
+.lede { font-size: 1.15rem; color: var(--muted); max-width: 62ch; margin: 0; }
+
+section { padding-top: 28px; margin-top: 28px; border-top: 1px solid var(--line); scroll-margin-top: 16px; }
+h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.65rem; line-height: 1.2; margin: 0 0 14px; text-wrap: balance; }
+h3 { font-size: 1.05rem; font-weight: 600; margin: 26px 0 8px; }
+p, li { max-width: 68ch; }
+p { margin: 0 0 14px; }
+ul, ol { margin: 0 0 14px; padding-left: 1.3em; }
+li { margin: 4px 0; }
+strong { font-weight: 600; }
+
+code, kbd, pre { font-family: var(--font-mono); font-size: .88em; }
+code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+kbd {
+  display: inline-block; padding: 1px 6px; border: 1px solid var(--line); border-bottom-width: 2px;
+  border-radius: 5px; background: var(--surface); font-size: .82em; line-height: 1.5; white-space: nowrap;
+}
+
+/* The flow: a real sequence, so it is numbered */
+.flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 24px 0 8px; padding: 0; list-style: none; counter-reset: step; }
+.flow li { max-width: none; margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; font-size: 14.5px; line-height: 1.5; counter-increment: step; }
+.flow li::before { content: counter(step); display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff; font: 600 12.5px var(--font-mono); margin-bottom: 8px; }
+.flow b { display: block; font-weight: 600; margin-bottom: 2px; }
+.flow .you { border-color: var(--accent); background: var(--accent-soft); }
+@media (max-width: 720px) { .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 420px) { .flow { grid-template-columns: minmax(0, 1fr); } }
+
+/* Two install columns */
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 18px 0; }
+@media (max-width: 720px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; min-width: 0; }
+.panel h3 { margin-top: 0; display: flex; align-items: center; gap: 8px; }
+.panel ol { margin-bottom: 8px; }
+.tag { font: 500 11.5px var(--font-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+
+/* Downloads */
+.downloads { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 28px 0 6px; }
+@media (max-width: 560px) { .downloads { grid-template-columns: minmax(0, 1fr); } }
+.dl {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; text-decoration: none;
+  background: var(--accent); color: #fff; border: 1px solid var(--accent); min-width: 0;
+}
+.dl:hover { filter: brightness(1.06); }
+.dl.alt { background: var(--surface); color: var(--fg); border-color: var(--line); }
+.dl.alt:hover { border-color: var(--accent); filter: none; }
+.dl svg { width: 28px; height: 28px; flex: none; }
+.dl span { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
+.dl b { font-weight: 600; }
+.dl small { font-size: 12.5px; opacity: .85; }
+.dl-more { font-size: 14px; color: var(--muted); margin: 8px 0 0; }
+
+/* Tables */
+.table { overflow-x: auto; margin: 14px 0 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: none; }
+th { font-weight: 600; font-size: 13px; color: var(--muted); background: var(--sunken); white-space: nowrap; }
+td:first-child { font-weight: 500; white-space: nowrap; }
+.pill { display: inline-block; font: 500 11.5px var(--font-mono); padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
+.pill.rw { background: var(--accent-soft); color: var(--accent); }
+.pill.sec { background: var(--sunken); color: var(--muted); }
+
+/* Callouts */
+.note { background: var(--warn-bg); color: var(--warn-fg); border-radius: 10px; padding: 12px 16px; margin: 14px 0 18px; font-size: 15px; max-width: 72ch; }
+.note p { margin: 0; max-width: none; }
+.note strong { color: inherit; }
+
+/* Code blocks with a copy button */
+.code { position: relative; margin: 10px 0 16px; min-width: 0; }
+.code pre { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; padding-right: 74px; overflow-x: auto; line-height: 1.55; }
+.copy {
+  position: absolute; top: 7px; right: 7px; font: 500 12px var(--font-body); color: var(--muted);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; cursor: pointer;
+}
+.copy:hover { color: var(--fg); border-color: var(--accent); }
+
+/* Troubleshooting */
+details { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); margin: 8px 0; }
+details summary { cursor: pointer; padding: 12px 16px; font-weight: 500; list-style-position: inside; }
+details[open] summary { border-bottom: 1px solid var(--line); }
+details > div { padding: 12px 16px 4px; }
+
+.tree { line-height: 1.6; }
+.tree .c { color: var(--muted); }
+footer { margin-top: 48px; color: var(--muted); font-size: 13.5px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <nav class="toc" aria-label="Contents">
+    <div class="brand">
+      <img alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect x='4' y='4' width='88' height='88' rx='20' fill='%23c96442'/%3E%3Cpath d='M24 30h40M24 46h30M24 62h20' stroke='%23fff' stroke-width='7' stroke-linecap='round'/%3E%3Cpath d='M54 66l8 8 16-20' stroke='%23fff' stroke-width='7' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+      Private Corrector
+    </div>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#download">Download</a></li>
+      <li><a href="#install">Install</a></li>
+      <li><a href="#first-use">First use</a></li>
+      <li><a href="#using">Using it</a></li>
+      <li><a href="#functions">Functions</a></li>
+      <li><a href="#destinations">Where prompts go</a></li>
+      <li><a href="#tasks">Saved tasks</a></li>
+      <li><a href="#settings">Settings</a></li>
+      <li><a href="#privacy">Permissions &amp; privacy</a></li>
+      <li><a href="#troubleshooting">Troubleshooting</a></li>
+      <li><a href="#developers">For developers</a></li>
+    </ol>
+    <p class="ver">Chrome 127+ · Firefox 128+</p>
+  </nav>
+
+  <main>
+    <header class="hero" id="overview">
+      <p class="eyebrow">Technical guide</p>
+      <h1>Private Corrector</h1>
+      <p class="lede">A browser extension for Chrome and Firefox that sends the text you select to Gemini, Claude or ChatGPT with ready-made instructions: correct with minimal changes, reformulate, shorten, make academic, convert to British or American English, explain, develop, find research papers, or run your own prompts. It uses your normal account on the AI website: no API key, no extra cost.</p>
+
+      <div class="downloads" id="download">
+        <a class="dl" href="https://github.com/0hran/Private-corrector/releases/latest/download/private-corrector-chrome.zip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          <span><b>Download for Chrome</b><small>Also Edge, Brave, Opera · .zip</small></span>
+        </a>
+        <a class="dl alt" href="https://github.com/0hran/Private-corrector/releases/latest/download/private-corrector-firefox.zip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          <span><b>Download for Firefox</b><small>Firefox 128+ · .zip</small></span>
+        </a>
+      </div>
+      <p class="dl-more">Latest release · <a href="https://github.com/0hran/Private-corrector/releases">All versions and release notes</a> · <a href="https://github.com/0hran/Private-corrector">Source code on GitHub</a></p>
+
+      <ol class="flow" aria-label="How it works">
+        <li><b>Select text</b>On any page, or copy it from another program.</li>
+        <li><b>Choose a function</b>Right-click menu, toolbar popup or keyboard shortcut.</li>
+        <li><b>The AI window opens</b>In a private chat, with the prompt already in the message box.</li>
+        <li class="you"><b>You press Send</b>Then copy the answer. Nothing is sent before you do.</li>
+      </ol>
+    </header>
+
+    <section id="install">
+      <h2>Install</h2>
+      <p>Download the zip for your browser with the buttons at the top of this page (<code>private-corrector-chrome.zip</code> or <code>private-corrector-firefox.zip</code>, also on the <a href="https://github.com/0hran/Private-corrector/releases">releases page</a>). The extension is not published in the Chrome Web Store or on addons.mozilla.org, so you load it yourself.</p>
+
+      <div class="cols">
+        <div class="panel">
+          <h3>Chrome <span class="tag">also Edge, Brave, Opera</span></h3>
+          <ol>
+            <li>Unzip <code>private-corrector-chrome.zip</code> into a folder you keep. Chrome loads the extension from that folder, so don't delete it afterwards.</li>
+            <li>Open <code>chrome://extensions</code> (Edge: <code>edge://extensions</code>).</li>
+            <li>Turn on <strong>Developer mode</strong>, top right.</li>
+            <li>Click <strong>Load unpacked</strong> and choose the folder.</li>
+            <li>Optional: click the puzzle icon in the toolbar and pin <strong>Private Corrector</strong>.</li>
+          </ol>
+          <p>It stays installed after a restart. To update: replace the folder's contents with the new version, then click the reload arrow on the extension's card.</p>
+        </div>
+        <div class="panel">
+          <h3>Firefox</h3>
+          <ol>
+            <li>Open <code>about:debugging#/runtime/this-firefox</code>.</li>
+            <li>Click <strong>Load Temporary Add-on…</strong></li>
+            <li>Choose <code>private-corrector-firefox.zip</code> (no need to unzip).</li>
+          </ol>
+          <p>A temporary add-on is removed when Firefox restarts, together with its settings. To keep your settings between restarts, open <code>about:config</code> and set <code>extensions.webextensions.keepStorageOnUninstall</code> to <code>true</code>. To install it permanently, see <a href="#sign-firefox">Signing for Firefox</a>.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="first-use">
+      <h2>First use</h2>
+      <ol>
+        <li>Sign in to the AI website you will use, in the same browser: <a href="https://gemini.google.com" target="_blank" rel="noopener">gemini.google.com</a> (the default), <a href="https://claude.ai" target="_blank" rel="noopener">claude.ai</a> or <a href="https://chatgpt.com" target="_blank" rel="noopener">chatgpt.com</a>.</li>
+        <li>Open the settings: right-click the toolbar icon, then <strong>Options</strong> (Chrome) or <strong>Manage Extension → Preferences</strong> (Firefox). You can also click ⚙ in the popup.</li>
+        <li>Check the <strong>AI assistant</strong> and the other options, then click <strong>Save</strong>.</li>
+      </ol>
+      <p>If the settings page shows a yellow banner about access to the AI sites, click <strong>Allow</strong>: the extension needs it to fill in the message box.</p>
+    </section>
+
+    <section id="using">
+      <h2>Using it</h2>
+
+      <h3>From the right-click menu</h3>
+      <p>Select text, right-click, open <strong>Private Corrector → Gemini</strong> (the menu shows your default AI) and choose a function. <strong>Ask a question…</strong> first shows a small box for your question.</p>
+
+      <h3>From the toolbar popup</h3>
+      <p>Click the Private Corrector icon. The text you selected on the page is pasted in automatically. If nothing is selected in the browser, the popup pastes what you last copied with <kbd>Ctrl</kbd>+<kbd>C</kbd>, which is how you bring in text from Word, a PDF reader or an email client. Then:</p>
+      <ul>
+        <li>Click one or several functions: they turn orange with a ✓.</li>
+        <li>Under <strong>Send to</strong>, choose the AI and either <em>private chat</em> or <em>my default chat</em>, for this prompt only.</li>
+        <li>Click <strong>Send</strong>. Double-click a function to send it alone right away.</li>
+      </ul>
+
+      <h3>Combining functions</h3>
+      <p>Selected functions go to the AI in a single prompt. Rewriting functions (marked <span class="pill rw">rewrite</span> below) are applied together and give one rewritten text, for example <em>Correct + British English</em> or <em>Shorten + Academic</em>. The others each get their own section in the answer, after the rewritten text. British and American English can't be combined.</p>
+
+      <h3>Keyboard shortcuts</h3>
+      <div class="table"><table>
+        <thead><tr><th>Shortcut</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd></td><td>Correct the selection (minimal changes)</td></tr>
+          <tr><td><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd></td><td>Ask a question about the selection</td></tr>
+        </tbody>
+      </table></div>
+      <p>Change them in Chrome at <code>chrome://extensions/shortcuts</code>, in Firefox in <code>about:addons</code> → gear icon → <strong>Manage Extension Shortcuts</strong>.</p>
+    </section>
+
+    <section id="functions">
+      <h2>Functions</h2>
+      <div class="table"><table>
+        <thead><tr><th>Function</th><th>Type</th><th>What the AI is asked to do</th></tr></thead>
+        <tbody>
+          <tr><td>Correct (minimal changes)</td><td><span class="pill rw">rewrite</span></td><td>Fix spelling, grammar, agreement, punctuation and typography. Change a word only when it is wrong; no rephrasing, no translation. Reply with the corrected text only.</td></tr>
+          <tr><td>Reformulate</td><td><span class="pill rw">rewrite</span></td><td>Rewrite clearly and fluently, keeping meaning, language, formality and roughly the length.</td></tr>
+          <tr><td>Make it more academic</td><td><span class="pill rw">rewrite</span></td><td>Formal academic register: precise vocabulary, objective tone, hedged claims. No invented data or citations.</td></tr>
+          <tr><td>Shorten</td><td><span class="pill rw">rewrite</span></td><td>Cut by about a third (adjustable) while keeping key ideas, facts, figures and conclusions.</td></tr>
+          <tr><td>Convert to British English</td><td><span class="pill rw">rewrite</span></td><td>colour, organise, centre, flat, ‘single quotes’. Nothing else changed; non-English text is translated.</td></tr>
+          <tr><td>Convert to American English</td><td><span class="pill rw">rewrite</span></td><td>color, organize, center, apartment, “double quotes”, periods inside quotes.</td></tr>
+          <tr><td>Develop / provide content</td><td><span class="pill sec">section</span></td><td>Expand the ideas with explanations, arguments and examples; flag claims that need a source.</td></tr>
+          <tr><td>Suggest research papers</td><td><span class="pill sec">section</span></td><td>Full references (authors, year, title, venue, DOI), why each is relevant. Asked to check on the web and never invent a reference. Still verify each one.</td></tr>
+          <tr><td>Explain</td><td><span class="pill sec">section</span></td><td>Plain-words summary, key ideas, technical terms, implicit context, a simple example; points out errors or debatable claims.</td></tr>
+          <tr><td>Ask a question…</td><td><span class="pill sec">section</span></td><td>Your own question or instruction about the selection.</td></tr>
+        </tbody>
+      </table></div>
+      <p>Rewriting functions keep the language of the text. The others answer in the language of the text unless you set another one in the settings. To change an instruction, edit <code>common/actions.js</code> (see <a href="#developers">For developers</a>).</p>
+    </section>
+
+    <section id="destinations">
+      <h2>Where prompts go</h2>
+      <p>One AI window is reused for everything: by default a small floating window at the top right, sized to fit your screen. Two destinations:</p>
+      <h3>Private chat (default)</h3>
+      <p>A new chat that isn't saved in your history. While the window stays open, every prompt goes into that same chat; closing the window ends it. The extension only reuses it once it has confirmed that private mode is on.</p>
+      <div class="table"><table>
+        <thead><tr><th>AI</th><th>Private mode</th><th>How the extension turns it on</th></tr></thead>
+        <tbody>
+          <tr><td>Gemini</td><td>Temporary chat</td><td>Opens <code>gemini.google.com/app</code> and clicks the temporary chat button</td></tr>
+          <tr><td>Claude</td><td>Incognito chat</td><td>Opens <code>claude.ai/new</code> and clicks the ghost icon</td></tr>
+          <tr><td>ChatGPT</td><td>Temporary chat</td><td>Opens <code>chatgpt.com/?temporary-chat=true</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>If the button can't be found or confirmed (after a site redesign, for example), a notification asks you to turn private mode on yourself before pressing Send.</p>
+      <h3>My default chat</h3>
+      <p>Every prompt goes into one chat you choose for each AI, kept in your history; the window always goes back to it. To set it: open the chat, then in the settings click <strong>Use the open chat</strong> next to that AI (or paste its address) and <strong>Save</strong>. An AI without a default chat uses its private chat.</p>
+      <div class="note"><p><strong>Usage limits.</strong> The AI re-reads the whole chat at each message, so a long chat uses up your plan's limits faster and mixes in earlier texts. Close the private window or start a new default chat from time to time.</p></div>
+    </section>
+
+    <section id="tasks">
+      <h2>Saved tasks</h2>
+      <p>Your own prompts, reusable in one click. They appear with a ★ in the right-click menu and in the popup, and combine with the built-in functions.</p>
+      <ul>
+        <li><strong>From the popup:</strong> select <em>Ask a question…</em>, type the instruction, click <strong>★ Save this as a task</strong>, name it, click <strong>Save</strong>.</li>
+        <li><strong>From the settings:</strong> <em>My saved tasks</em> → <strong>＋ Add a task</strong>, edit or delete, then <strong>Save</strong>.</li>
+        <li>Tick <strong>Reply with the text only</strong> for tasks that transform the text (e.g. “Turn this into a polite, concise email”), so the result can be copied directly and merges with other rewriting functions.</li>
+      </ul>
+    </section>
+
+    <section id="settings">
+      <h2>Settings</h2>
+      <div class="table"><table>
+        <thead><tr><th>Setting</th><th>Values</th><th>Default</th></tr></thead>
+        <tbody>
+          <tr><td>AI assistant</td><td>Gemini, Claude, ChatGPT</td><td>Gemini</td></tr>
+          <tr><td>Where prompts go</td><td>Private chat, My default chat</td><td>Private chat</td></tr>
+          <tr><td>Default chat</td><td>One address per AI</td><td>None</td></tr>
+          <tr><td>Saved tasks</td><td>Name, instruction, “text only”</td><td>None</td></tr>
+          <tr><td>Open the AI page</td><td>Floating window, new tab, background tab</td><td>Floating window</td></tr>
+          <tr><td>Language of answers</td><td>Same as the text, or a fixed language</td><td>Same as the text</td></tr>
+          <tr><td>“Shorten” reduces by</td><td>A quarter, a third, half, as much as possible</td><td>A third</td></tr>
+          <tr><td>Personal instructions</td><td>Free text added to every prompt</td><td>Empty</td></tr>
+        </tbody>
+      </table></div>
+      <p><strong>Reset to defaults</strong> keeps your saved tasks. Settings are stored in the browser only (extension storage).</p>
+    </section>
+
+    <section id="privacy">
+      <h2>Permissions &amp; privacy</h2>
+      <div class="table"><table>
+        <thead><tr><th>Permission</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><code>contextMenus</code> / <code>menus</code></td><td>The right-click entry, shown only when text is selected.</td></tr>
+          <tr><td><code>activeTab</code>, <code>scripting</code></td><td>Reads your selection only at the moment you click a function or use a shortcut, in that tab only. No script runs on the pages you visit.</td></tr>
+          <tr><td>claude.ai, chatgpt.com, gemini.google.com</td><td>In the AI window the extension opened: opens your default chat or starts a private chat, and fills in the message box. It never presses Send and never reads your chats.</td></tr>
+          <tr><td><code>clipboardWrite</code></td><td>Copies the prompt as a backup. Chrome does this through a hidden offscreen page.</td></tr>
+          <tr><td><code>clipboardRead</code></td><td>Only when you open the popup and nothing is selected: pastes what you last copied.</td></tr>
+          <tr><td><code>notifications</code></td><td>Tells you when you need to paste the prompt or turn private mode on yourself.</td></tr>
+          <tr><td><code>storage</code></td><td>Settings and saved tasks, in this browser only.</td></tr>
+          <tr><td><code>offscreen</code> (Chrome)</td><td>The hidden page used to copy to the clipboard.</td></tr>
+        </tbody>
+      </table></div>
+      <p>The extension makes no network requests of its own and has no analytics. Your text reaches the AI only when you press Send, under that service's terms and your account's settings, exactly as if you had pasted it yourself. The selected text is wrapped in <code>&lt;text&gt;</code> tags and treated as material to work on, which makes instructions hidden in a web page less likely to take over. Still read the prompt before sending.</p>
+    </section>
+
+    <section id="troubleshooting">
+      <h2>Troubleshooting</h2>
+      <details>
+        <summary>The prompt is not filled in</summary>
+        <div><p>It is always copied to the clipboard too: click in the AI's message box and press <kbd>Ctrl</kbd>+<kbd>V</kbd> (<kbd>⌘</kbd>+<kbd>V</kbd> on a Mac). A notification says when this is needed. The usual cause is a redesign of the AI website; the message box selectors are in <code>common/providers.js</code>. Very long texts may appear as a “pasted text” attachment, as when you paste them yourself.</p></div>
+      </details>
+      <details>
+        <summary>“Turn on temporary / incognito chat before you press Send”</summary>
+        <div><p>The extension could not find or confirm the private-chat button. Turn it on in the AI window yourself, or close the window and try again. The next prompt starts a fresh chat, because an unconfirmed private chat is never reused.</p></div>
+      </details>
+      <details>
+        <summary>Nothing happens on a PDF, a store page or a browser settings page</summary>
+        <div><p>Browsers don't let extensions run on their built-in PDF viewer, their own pages (<code>chrome://</code>, <code>about:</code>) or their extension stores. Copy the text with <kbd>Ctrl</kbd>+<kbd>C</kbd> and use the toolbar popup.</p></div>
+      </details>
+      <details>
+        <summary>Firefox forgets my settings after a restart</summary>
+        <div><p>Temporary add-ons are removed at restart with their data. Set <code>extensions.webextensions.keepStorageOnUninstall</code> to <code>true</code> in <code>about:config</code>, or install the signed version (see <a href="#sign-firefox">Signing for Firefox</a>).</p></div>
+      </details>
+      <details>
+        <summary>“Combine several functions…” in the right-click menu does nothing</summary>
+        <div><p>It opens the toolbar popup, which needs Chrome 127+ or a recent Firefox. If your browser refuses, a notification asks you to click the toolbar icon instead.</p></div>
+      </details>
+      <details>
+        <summary>Chrome shows a warning about developer-mode extensions</summary>
+        <div><p>Some Chrome versions and Edge remind you that an unpacked extension is installed. It is expected for extensions loaded with <strong>Load unpacked</strong>; dismiss it or keep it.</p></div>
+      </details>
+    </section>
+
+    <section id="developers">
+      <h2>For developers</h2>
+      <h3>Project layout</h3>
+      <div class="code"><pre class="tree">extension/              <span class="c">shared code; this folder is the Firefox version</span>
+  manifest.json         <span class="c">Firefox manifest (Manifest V3, background scripts)</span>
+  background.js         <span class="c">menus, shortcuts, opens the AI page, fills in the prompt</span>
+  common/compat.js      <span class="c">runs the same code in Chrome (chrome.* vs browser.*)</span>
+  common/actions.js     <span class="c">functions, their instructions, prompt building</span>
+  common/providers.js   <span class="c">AI websites: addresses, private chat, message box</span>
+  popup/  options/      <span class="c">toolbar popup and settings page</span>
+  icons/                <span class="c">SVG source and PNG sizes</span>
+chrome/                 <span class="c">Chrome-only: sw.js, offscreen.html, offscreen.js</span>
+build.sh                <span class="c">builds dist/firefox and dist/chrome</span></pre></div>
+
+      <h3>Build</h3>
+      <div class="code"><pre><code>./build.sh</code></pre><button class="copy" type="button" data-copy="./build.sh">Copy</button></div>
+      <p>Produces <code>dist/private-corrector-firefox.zip</code> and <code>dist/private-corrector-chrome.zip</code>, plus the unzipped folders. The Chrome manifest is generated from the Firefox one. The script overwrites files and deletes nothing; delete <code>dist/</code> yourself after removing a source file.</p>
+
+      <h3>Chrome and Firefox differences</h3>
+      <div class="table"><table>
+        <thead><tr><th>Topic</th><th>Firefox</th><th>Chrome</th></tr></thead>
+        <tbody>
+          <tr><td>Background</td><td>Event page: <code>background.scripts</code></td><td>Service worker: <code>chrome/sw.js</code> imports the same scripts</td></tr>
+          <tr><td>API namespace</td><td><code>browser.*</code></td><td><code>chrome.*</code> wrapped as <code>browser.*</code> by <code>compat.js</code></td></tr>
+          <tr><td>Context menu</td><td><code>browser.menus</code></td><td><code>chrome.contextMenus</code></td></tr>
+          <tr><td>Async message replies</td><td>Listener returns a promise</td><td>Adapted to <code>sendResponse</code> by <code>compat.js</code></td></tr>
+          <tr><td>Clipboard from background</td><td>The background page</td><td>Offscreen document (<code>chrome/offscreen.html</code>)</td></tr>
+          <tr><td>Icons</td><td>SVG or PNG</td><td>PNG only</td></tr>
+        </tbody>
+      </table></div>
+      <p>Recent Chrome versions define a <code>browser</code> object of their own, without <code>menus</code>. <code>compat.js</code> therefore detects Firefox by <code>browser.runtime.getBrowserInfo</code>, which only Firefox has, and replaces the object everywhere else.</p>
+
+      <h3>Tuning a function</h3>
+      <p>Each entry in <code>PC_ACTIONS</code> (<code>common/actions.js</code>) has <code>instructions</code> (used when the function is sent alone), <code>task</code> (a short form used when it is combined), <code>rewrite</code> (true when the reply is the text only) and, for the others, <code>section</code> (the heading in a combined answer). <code>{amount}</code> in Shorten is replaced by the setting.</p>
+
+      <h3>Adding an AI website</h3>
+      <p>Add an entry to <code>PC_PROVIDERS</code> in <code>common/providers.js</code>: <code>name</code>, <code>match</code> (URL pattern), <code>newChat</code>, either <code>privateUrl</code> or <code>privateButton</code> + <code>privateLabel</code>, <code>chatRe</code> (address of a saved chat), <code>chatExample</code> and <code>inputs</code> (CSS selectors of the message box, best first). Add the site to <code>host_permissions</code> in <code>extension/manifest.json</code> and an option in the popup and settings page.</p>
+
+      <h3 id="sign-firefox">Signing for Firefox</h3>
+      <p>Firefox installs unsigned extensions only temporarily. Mozilla signs private (“unlisted”) add-ons for free. Create API credentials at <a href="https://addons.mozilla.org/developers/addon/api/key/" target="_blank" rel="noopener">addons.mozilla.org → API keys</a>, then run this in <code>dist/firefox</code>:</p>
+      <div class="code"><pre><code>npx web-ext sign --channel=unlisted --api-key=YOUR_JWT_ISSUER --api-secret=YOUR_JWT_SECRET</code></pre><button class="copy" type="button" data-copy="npx web-ext sign --channel=unlisted --api-key=YOUR_JWT_ISSUER --api-secret=YOUR_JWT_SECRET">Copy</button></div>
+      <p>Open the resulting <code>.xpi</code> in Firefox. Firefox Developer Edition and Nightly can also install unsigned add-ons when <code>xpinstall.signatures.required</code> is <code>false</code>.</p>
+
+      <h3>Checks</h3>
+      <div class="code"><pre><code>npx web-ext lint --source-dir extension</code></pre><button class="copy" type="button" data-copy="npx web-ext lint --source-dir extension">Copy</button></div>
+    </section>
+
+    <footer>Private Corrector · Shared codebase for Chrome and Firefox · Manifest V3 · <a href="https://github.com/0hran/Private-corrector">GitHub</a></footer>
+  </main>
+</div>
+
+<script>
+document.querySelectorAll(".copy").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    const text = btn.dataset.copy;
+    const done = (label) => {
+      btn.textContent = label;
+      setTimeout(() => (btn.textContent = "Copy"), 1500);
+    };
+    try {
+      await navigator.clipboard.writeText(text);
+      done("Copied");
+    } catch (_) {
+      const pre = btn.previousElementSibling;
+      const range = document.createRange();
+      range.selectNodeContents(pre);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      done("Selected");
+    }
+  });
+});
+</script>
+
+</body>
+</html>

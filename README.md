@@ -2,6 +2,15 @@
 
 A Firefox and Chrome extension that sends the text you select to **Gemini (default), Claude or ChatGPT**, together with instructions for what you want done. It uses your normal account on that site (free or paid): no API key and no extra cost. You review the prompt and press Send yourself.
 
+## Download
+
+| Browser | Download |
+|---|---|
+| **Chrome**, Edge, Brave, Opera | [private-corrector-chrome.zip](https://github.com/0hran/Private-corrector/releases/latest/download/private-corrector-chrome.zip) |
+| **Firefox** | [private-corrector-firefox.zip](https://github.com/0hran/Private-corrector/releases/latest/download/private-corrector-firefox.zip) |
+
+All versions: [Releases](https://github.com/0hran/Private-corrector/releases) · Full guide: [0hran.github.io/Private-corrector](https://0hran.github.io/Private-corrector/)
+
 | Action | What the AI is asked to do |
 |---|---|
 | **Correct (minimal changes)** | Fix spelling, grammar, agreement and punctuation without rephrasing anything; reply with the corrected text only |
@@ -50,7 +59,7 @@ The prompt is **always copied to your clipboard** as well. If the extension can'
 
 ## Install
 
-Build both versions (or use the zips attached to a release):
+Download the zip for your browser above, or build both versions yourself:
 
 ```bash
 ./build.sh
@@ -86,7 +95,14 @@ extension/            shared code; this folder is the Firefox version as is
   popup/  options/    toolbar popup and settings page
 chrome/               Chrome-only files: service worker entry point, offscreen clipboard page
 build.sh              builds dist/firefox and dist/chrome (Chrome manifest generated)
+docs/                 the GitHub Pages site: download page and guide
+.github/workflows/    release.yml: builds the zips and publishes a release on every push to main
 ```
+
+## Publishing a new version
+
+1. Raise `"version"` in `extension/manifest.json` (the Chrome manifest takes it from there).
+2. Push to `main`. The **Release** workflow builds both zips and publishes them as release `v<version>`; the download links always point to the latest release. Pushing again with the same version replaces that release's zips.
 
 ## What it can access
 
