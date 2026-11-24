@@ -16,12 +16,29 @@
       <button id="grant" class="btn primary">Allow</button>
     </section>
 
-    <label class="check"><input id="incognito" type="checkbox"> Use Claude incognito chats</label>
-    <p class="hint">When the Claude window opens, the extension starts a new chat and turns on incognito (ghost icon): the chat is not saved in your Claude history or memory.
-      While the window stays open, every prompt goes into that same chat. Closing the window erases it, and the next action starts a new one.
-      Close it from time to time: Claude re-reads the whole chat at each message, which uses up your usage limits faster.
-      Incognito is not available for chats inside a project.</p>
+    <h2>Where prompts go</h2>
+    <label class="check"><input type="radio" name="destination" value="incognito"> Incognito chat (default)</label>
+    <p class="hint">The extension starts a new chat and turns on Claude's incognito mode (ghost icon): nothing is saved in your Claude history or memory.
+      While the Claude window stays open, every prompt goes into that same chat. Closing the window erases it.</p>
 
+    <label class="check"><input type="radio" name="destination" value="chat"> My default chat</label>
+    <p class="hint">Every prompt goes into one Claude chat that you choose. The window always goes back to it, whatever it is showing. The chat is kept in your history.</p>
+    <div class="row">
+      <input id="chatUrl" type="text" spellcheck="false" placeholder="https://claude.ai/chat/…">
+      <button id="useOpenChat" class="btn" type="button">Use the chat open in Claude</button>
+    </div>
+    <p class="hint">Open the chat you want on claude.ai (in the Claude window or any tab), then click <strong>Use the chat open in Claude</strong>. Or paste its address.
+      You can also switch between the two destinations for a single prompt in the toolbar popup (<em>Send to</em>).
+      In either case, Claude re-reads the whole chat at each message, so a long chat uses up your usage limits faster.</p>
+
+    <h2>My saved tasks</h2>
+    <p class="hint">Your own prompts, available in the right-click menu (★) and the toolbar popup, where they can be combined with the other functions.
+      Write the instruction as you would to Claude, for example “Make this email more polite and concise”.
+      Tick <em>Reply with the text only</em> when the task transforms the text (so the result can be copied directly).</p>
+    <div id="tasks"></div>
+    <button id="addTask" class="btn" type="button">＋ Add a task</button>
+
+    <h2>Other settings</h2>
     <label for="openIn">Open the Claude page</label>
     <select id="openIn">
       <option value="window">In a small floating window</option>
@@ -56,7 +73,7 @@
       <summary>Advanced</summary>
       <label for="newChatUrl">Address used to start a new chat</label>
       <input id="newChatUrl" type="text" spellcheck="false">
-      <p class="hint">Leave it as https://claude.ai/new for incognito chats.</p>
+      <p class="hint">Used to start incognito chats. Leave it as https://claude.ai/new (incognito is not available inside projects).</p>
     </details>
 
     <div class="row actions">

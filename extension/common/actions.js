@@ -126,8 +126,36 @@ var PC_ACTIONS = [
   }
 ];
 
-function pcGetAction(id) {
-  return PC_ACTIONS.find((a) => a.id === id) || PC_ACTIONS[0];
+/*
+ * Saved tasks (your own prompts), stored as
+ * [{ id: "custom-…", title, prompt, rewrite }] in browser.storage.local "customTasks".
+ * rewrite = true: Claude replies with the transformed text only (like Correct).
+ */
+function pcCustomToActions(customTasks) {
+  return (customTasks || [])
+    .filter((t) => t && t.id && t.title && t.prompt)
+    .map((t) => ({
+      id: t.id,
+      title: t.title,
+      custom: true,
+      rewrite: Boolean(t.rewrite),
+      task: t.prompt.trim(),
+      section: t.title,
+      instructions:
+        "Apply the following to the text inside the <text> tags: " + t.prompt.trim() +
+        (t.rewrite
+          ? " Reply with the resulting text only, with no introduction or explanation, so that I can copy it directly."
+          : "")
+    }));
+}
+
+function pcAllActions(customTasks) {
+  return PC_ACTIONS.concat(pcCustomToActions(customTasks));
+}
+
+function pcGetAction(id, customTasks) {
+  const all = pcAllActions(customTasks);
+  return all.find((a) => a.id === id) || null;
 }
 
 function pcLanguageLine(settings) {
@@ -154,23 +182,23 @@ function pcBuildPrompt(actions, text, settings, question) {
     const rewrites = list.filter((a) => a.rewrite);
     const others = list.filter((a) => !a.rewrite);
     const rewriteTask = rewrites.length
-      ? "Rewrite the text so that, at the same time, you " +
-        rewrites.map((a) => a.task).join("; and ") +
-        ". Keep everything else (meaning, structure, formatting) unchanged."
+      ? "Rewrite the text applying all of the following at once:\n" +
+        rewrites.map((a) => "   - " + a.task).join("\n") +
+        "\n   Keep everything else (meaning, structure, formatting) unchanged."
       : "";
 
     if (!others.length) {
       // Only rewriting functions: one rewritten text, nothing else.
       parts.push(
         "Work on the text inside the <text> tags. " + rewriteTask +
-          " Reply with the rewritten text only, with no introduction or explanation, so that I can copy it directly."
+          "\nReply with the rewritten text only, with no introduction or explanation, so that I can copy it directly."
       );
     } else {
       const sections = [];
       if (rewrites.length) {
         sections.push(
           "Rewritten text: " + rewriteTask +
-            " Give the rewritten text alone in this section, without comments, so that I can copy it."
+            "\n   Give the rewritten text alone in this section, without comments, so that I can copy it."
         );
       }
       for (const a of others) {

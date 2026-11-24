@@ -26,3 +26,12 @@ textarea { width: 100%; background: var(--soft); border: 1px solid var(--border)
 .go { width: 100%; margin-top: 8px; padding: 8px; }
 .go:disabled { opacity: .45; cursor: default; }
 [hidden] { display: none !important; }
+.chip.mine { border-style: dashed; }
+.chip.mine.on { border-style: solid; }
+.small { font-size: 12px; }
+.save-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; }
+.save-row input[type=text] { font: inherit; font-size: 12px; color: inherit; background: var(--soft); border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; width: 130px; }
+.ask { flex-direction: column; }
+.ok { color: #2e7d32; }
+.dest { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; }
+.dest select { flex: 1; font: inherit; color: inherit; background: var(--soft); border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; }

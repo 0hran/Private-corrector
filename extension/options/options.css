@@ -22,3 +22,11 @@ a { color: var(--accent); }
 details { margin-top: 24px; }
 summary { cursor: pointer; color: var(--muted); }
 .warn { background: var(--warn); border-radius: 8px; padding: 12px; margin-top: 16px; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+h2 { font-size: 17px; margin: 36px 0 4px; padding-top: 12px; border-top: 1px solid var(--border); }
+input[type=radio] { accent-color: var(--accent); }
+.task { border: 1px solid var(--border); background: var(--soft); border-radius: 10px; padding: 12px; margin: 12px 0; }
+.task .row { margin-bottom: 8px; }
+.task textarea { margin-bottom: 6px; }
+.task label.check { margin: 4px 0 0; font-weight: 500; }
+.btn.danger { color: #b3261e; }
+[hidden] { display: none !important; }

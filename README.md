@@ -21,17 +21,20 @@ A Firefox extension that sends the text you select to **claude.ai**, together wi
 2. Select text on any page, then right-click, open **Private Corrector → Claude**, and choose an action.
 3. The extension puts the prompt in the message box of your **Claude window**. Check it, press Send yourself, then copy Claude's answer with its copy button.
 
-**Incognito, one window.**
-- The first time (or after you close the window), a small floating claude.ai window opens on a new chat. The extension turns on Claude's **incognito mode** (the ghost icon), so the chat is kept out of your Claude history and memory.
-- While the window stays open, every action brings it to the front and fills in the prompt in that same incognito chat. No new windows, tabs or chats pile up.
-- Closing the window erases the incognito chat. The next action starts a fresh one.
-- If the extension can't turn incognito on (for example after a claude.ai redesign), a notification asks you to click the ghost icon at the top right before you press Send.
+**Where prompts go.** One Claude window is reused for everything, and you pick its destination:
+- **Incognito chat (default).** The first time (or after you close the window), a small floating claude.ai window opens on a new chat and the extension turns on Claude's **incognito mode** (the ghost icon). The chat stays out of your Claude history and memory. While the window stays open, every prompt goes into that same incognito chat. Closing the window erases it. If incognito can't be turned on automatically, a notification asks you to click the ghost icon before you press Send.
+- **My default chat.** Every prompt goes into one Claude chat you choose, kept in your history. The window always goes back to that chat, whatever it is showing. To choose it, open the chat on claude.ai, then in the settings click **Use the chat open in Claude** (or paste its address) and **Save**.
 
-Claude re-reads the whole chat at each message, so close the window now and then: a long chat uses up your usage limits faster and mixes in your earlier texts. Incognito can be turned off in the settings.
+The default is set in the settings. The toolbar popup has a **Send to** menu to use the other destination for a single prompt. Claude re-reads the whole chat at each message, so a long chat uses up your usage limits faster: close the incognito window now and then, or change your default chat from time to time.
+
+**Saved tasks.** Save your own prompts to reuse them in one click. They appear with a ★ in the right-click menu and in the popup, and can be combined with the other functions.
+- In the popup: select **Ask Claude…**, type your instruction, click **★ Save this as a task**, give it a name, then click Save.
+- In the settings, under **My saved tasks**: add, edit or delete tasks.
+- Tick **Reply with the text only** for tasks that transform the text (for example "Turn this into a polite, concise email"), so the result can be copied directly and merges with the other rewriting functions when combined.
 
 **Combining functions.** In the toolbar popup, click several functions to select them (they turn orange with a ✓), then click **Send to Claude**. Everything goes to Claude in a single prompt:
-- several rewriting functions (Correct, Reformulate, Academic, Shorten, British or American English) are applied together to give **one** rewritten text, for example *Correct + British English* or *Academic + American English*;
-- the other functions (Develop, Papers, Explain, Ask) each get their own section in the answer, after the rewritten text.
+- several rewriting functions (Correct, Reformulate, Academic, Shorten, British or American English, and saved tasks marked "text only") are applied together to give **one** rewritten text, for example *Correct + British English* or *Academic + American English*;
+- the other functions (Develop, Papers, Explain, Ask, other saved tasks) each get their own section in the answer, after the rewritten text.
 
 British and American English can't be selected together. Your choice is remembered for next time. Double-click a function to send it alone right away. From the right-click menu, **Combine several functions…** opens the popup with your selection already in it.
 
@@ -56,17 +59,18 @@ A temporary add-on is removed when Firefox restarts. To install it permanently, 
 |---|---|
 | `menus` | Adds the right-click entry, shown only when text is selected |
 | `activeTab` + `scripting` | Reads your selection **only at the moment you click an action or use a shortcut**, in that tab only. No script runs on the pages you visit. |
-| Access to `claude.ai` | In the Claude window the extension opened: clicks the incognito (ghost) icon on new chats and fills in the message box. It never presses Send and never reads your chats. |
+| Access to `claude.ai` | In the Claude window the extension opened: opens your default chat or clicks the incognito (ghost) icon on new chats, and fills in the message box. It never presses Send and never reads your chats. |
 | `clipboardWrite` | Copies the prompt as a backup |
 | `clipboardRead` | Only when you open the popup and nothing is selected in Firefox: pastes what you last copied into the popup. Nothing is sent until you choose an action. |
 | `notifications` | Tells you when you need to paste the prompt yourself |
-| `storage` | Saves your settings |
+| `storage` | Saves your settings and saved tasks, in this browser only |
 
 The extension makes **no network requests**. It only opens your Claude page and fills in the message box. Nothing is sent until you press Send, and then it goes to Claude exactly as if you had pasted it in yourself, under your account's normal settings and usage limits.
 
 ## Settings
 
-- Use Claude incognito chats (on by default).
+- Where prompts go: incognito chat (default) or your default chat.
+- My saved tasks: add, edit, delete.
 - Open the Claude page in a floating mini window (default), a tab, or a background tab.
 - Language of answers for Develop, Papers, Explain and Ask. By default it follows the language of the text.
 - How much **Shorten** reduces the text: about a quarter, a third (default), half, or as much as possible.

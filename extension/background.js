@@ -2,14 +2,15 @@
 "use strict";
 
 const DEFAULT_SETTINGS = {
+  destination: "incognito", // "incognito" (default) | "chat" (the chat saved in chatUrl)
+  chatUrl: "", // your default Claude chat, e.g. https://claude.ai/chat/…
   newChatUrl: "https://claude.ai/new",
-  incognito: true, // turn on Claude's incognito mode in new chats
   openIn: "window", // "window" (floating mini window) | "foreground" | "background" (tabs)
   answerLanguage: "same",
   shortenAmount: "about a third",
-  customInstructions: ""
+  customInstructions: "",
+  customTasks: [] // saved tasks: [{ id, title, prompt, rewrite }]
 };
-
 
 async function getSettings() {
   return { ...DEFAULT_SETTINGS, ...(await browser.storage.local.get(DEFAULT_SETTINGS)) };
@@ -18,15 +19,29 @@ async function getSettings() {
 /* ---------- Context menu ---------- */
 
 async function createMenus() {
+  const { customTasks } = await getSettings();
   await browser.menus.removeAll();
-  browser.menus.create({ id: "pc-root", title: "Private Corrector → Claude", contexts: ["selection"] });
+  const ctx = ["selection"];
+  browser.menus.create({ id: "pc-root", title: "Private Corrector → Claude", contexts: ctx });
   for (const action of PC_ACTIONS) {
-    browser.menus.create({ id: "pc-" + action.id, parentId: "pc-root", title: action.title, contexts: ["selection"] });
+    browser.menus.create({ id: "pc-" + action.id, parentId: "pc-root", title: action.title, contexts: ctx });
   }
-  browser.menus.create({ id: "pc-sep", parentId: "pc-root", type: "separator", contexts: ["selection"] });
-  browser.menus.create({ id: "combine", parentId: "pc-root", title: "Combine several functions…", contexts: ["selection"] });
+  const mine = pcCustomToActions(customTasks);
+  if (mine.length) {
+    browser.menus.create({ id: "pc-sep-mine", parentId: "pc-root", type: "separator", contexts: ctx });
+    for (const action of mine) {
+      browser.menus.create({ id: "pc-" + action.id, parentId: "pc-root", title: "★ " + action.title, contexts: ctx });
+    }
+  }
+  browser.menus.create({ id: "pc-sep", parentId: "pc-root", type: "separator", contexts: ctx });
+  browser.menus.create({ id: "combine", parentId: "pc-root", title: "Combine several functions…", contexts: ctx });
 }
 createMenus();
+
+// Rebuild the menu when saved tasks change.
+browser.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && changes.customTasks) createMenus();
+});
 
 browser.menus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === "combine") {
@@ -35,7 +50,9 @@ browser.menus.onClicked.addListener(async (info, tab) => {
     return;
   }
   if (!String(info.menuItemId).startsWith("pc-")) return;
-  const action = pcGetAction(String(info.menuItemId).slice(3));
+  const { customTasks } = await getSettings();
+  const action = pcGetAction(String(info.menuItemId).slice(3), customTasks);
+  if (!action) return;
   const frames = info.frameId != null ? [info.frameId] : undefined;
   const text = (await readSelection(tab, frames)) || info.selectionText || "";
   await run(action, text, tab, frames);
@@ -54,10 +71,19 @@ browser.commands.onCommand.addListener(async (command) => {
 });
 
 browser.runtime.onMessage.addListener(async (msg) => {
-  // From the popup: { type: "pc-send", actionIds: [...], text, question }
+  // From the popup: { type: "pc-send", actionIds: [...], text, question, destination }
   if (msg && msg.type === "pc-send") {
-    const actions = (msg.actionIds || []).map(pcGetAction);
-    return sendToClaude(actions, msg.text, msg.question);
+    const { customTasks } = await getSettings();
+    const actions = (msg.actionIds || []).map((id) => pcGetAction(id, customTasks)).filter(Boolean);
+    return sendToClaude(actions, msg.text, msg.question, msg.destination);
+  }
+  // From the settings page: address of the chat shown in the Claude window.
+  if (msg && msg.type === "pc-current-chat") {
+    const tab = await getClaudeTab();
+    if (tab && /^https:\/\/claude\.ai\/chat\//.test(tab.url || "")) return chatKey(tab.url);
+    const tabs = await browser.tabs.query({ url: "https://claude.ai/chat/*" });
+    const best = tabs.find((t) => t.active) || tabs[0];
+    return best ? chatKey(best.url) : "";
   }
 });
 
@@ -76,36 +102,61 @@ async function run(action, text, tab, frames) {
   }
 }
 
-/* ---------- Sending to the Claude window (incognito chat) ---------- */
+/* ---------- Sending to the Claude window ---------- */
 
 /*
  * Build the prompt, copy it (as a backup), then put it in the message box of the
- * Claude window. One window is reused: while it stays open, every prompt goes into
- * the chat it shows. When a new window is opened, the extension starts a new chat and
- * turns on Claude's incognito mode (ghost icon), so nothing is kept in your history.
- * Closing the window ends the incognito chat. You press Send yourself.
+ * Claude window. One window is reused. Two destinations:
+ *  - "incognito" (default): a new chat with Claude's incognito mode turned on (ghost
+ *    icon), reused while the window stays open; closing the window erases it.
+ *  - "chat": your default chat (chatUrl); the window always goes back to it.
+ * You press Send yourself.
  */
-async function sendToClaude(action, text, question) {
-  // `action` is one action or a list of actions combined in one prompt.
+async function sendToClaude(action, text, question, destinationOverride) {
   const settings = await getSettings();
+  let destination = destinationOverride || settings.destination;
+  if (destination === "chat" && !settings.chatUrl) destination = "incognito";
+  const mode = destination === "chat" ? "chat:" + chatKey(settings.chatUrl) : "incognito";
+
   const prompt = pcBuildPrompt(action, text, settings, question);
   await copyToClipboard(prompt);
 
+  const { claudeMode } = await browser.storage.session.get("claudeMode");
   let tab = await getClaudeTab();
-  let fresh = false;
-  if (!tab) {
-    tab = await openClaudePage(settings, settings.newChatUrl);
-    fresh = true;
-  } else {
-    await focusTab(tab);
-    if (!/^https:\/\/claude\.ai\//.test(tab.url || "")) {
-      await browser.tabs.update(tab.id, { url: settings.newChatUrl });
-      fresh = true;
+  if (!tab && destination === "chat") tab = await findOpenTab(settings.chatUrl);
+
+  if (destination === "chat") {
+    const target = settings.chatUrl;
+    if (!tab) {
+      tab = await openClaudePage(settings, target);
+      await waitForLoad(tab.id);
+    } else {
+      await rememberTab(tab);
+      await focusTab(tab);
+      if (!sameChat(tab.url, target)) {
+        await browser.tabs.update(tab.id, { url: target });
+        await waitForLoad(tab.id);
+      }
     }
-  }
-  if (fresh) {
-    await waitForLoad(tab.id);
-    if (settings.incognito) {
+    const now = await browser.tabs.get(tab.id);
+    if (!sameChat(now.url, target)) {
+      notify("Your default Claude chat could not be opened (deleted?). Check its address in the settings before you press Send.");
+    }
+  } else {
+    // Incognito: reuse the incognito chat while the window stays open.
+    let fresh = false;
+    if (!tab) {
+      tab = await openClaudePage(settings, settings.newChatUrl);
+      fresh = true;
+    } else {
+      await focusTab(tab);
+      if (claudeMode !== "incognito" || !/^https:\/\/claude\.ai\//.test(tab.url || "")) {
+        await browser.tabs.update(tab.id, { url: settings.newChatUrl });
+        fresh = true;
+      }
+    }
+    if (fresh) {
+      await waitForLoad(tab.id);
       const state = await turnOnIncognito(tab.id);
       if (state !== "on") {
         notify(
@@ -116,7 +167,31 @@ async function sendToClaude(action, text, question) {
       }
     }
   }
+  await browser.storage.session.set({ claudeMode: mode });
   return { filled: await fillPrompt(tab.id, prompt) };
+}
+
+function chatKey(url) {
+  try {
+    const u = new URL(url);
+    return u.origin + u.pathname.replace(/\/$/, "");
+  } catch (_) {
+    return "";
+  }
+}
+
+function sameChat(a, b) {
+  return Boolean(a && b) && chatKey(a) === chatKey(b);
+}
+
+/* After a Firefox restart, reuse a tab that already shows the chat. */
+async function findOpenTab(chatUrl) {
+  const tabs = await browser.tabs.query({ url: "https://claude.ai/*" });
+  return tabs.find((t) => sameChat(t.url, chatUrl)) || null;
+}
+
+async function rememberTab(tab) {
+  await browser.storage.session.set({ claudeTabId: tab.id });
 }
 
 /* Click the ghost icon of a new chat. Returns "on", "clicked" (not confirmed) or "notfound". */
@@ -194,7 +269,8 @@ async function openClaudePage(settings, url) {
   } else {
     tab = await browser.tabs.create({ url, active: settings.openIn !== "background" });
   }
-  await browser.storage.session.set({ claudeTabId: tab.id });
+  await rememberTab(tab);
+  await browser.storage.session.remove("claudeMode");
   return tab;
 }
 

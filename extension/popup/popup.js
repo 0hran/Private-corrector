@@ -2,6 +2,13 @@
 
 const $ = (id) => document.getElementById(id);
 const DRAFT_KEY = "pc-popup-draft";
+const SELECTED_KEY = "pc-popup-selected";
+
+let customTasks = [];
+let allActions = PC_ACTIONS;
+let selected = new Set();
+
+/* ---------- Text ---------- */
 
 try {
   $("input").value = localStorage.getItem(DRAFT_KEY) || "";
@@ -69,29 +76,32 @@ async function readClipboard() {
     return "";
   }
 }
-loadSelection();
 
-/* ---------- Choosing functions (several can be combined) ---------- */
+/* ---------- Functions (several can be combined) ---------- */
 
-const SELECTED_KEY = "pc-popup-selected";
-let selected = new Set();
-try {
-  selected = new Set(JSON.parse(localStorage.getItem(SELECTED_KEY) || "[]").filter((id) => PC_ACTIONS.some((a) => a.id === id)));
-} catch (_) {}
-
-for (const action of PC_ACTIONS) {
-  const b = document.createElement("button");
-  b.className = "chip";
-  b.textContent = action.title;
-  b.dataset.id = action.id;
-  b.title = "Click to select or unselect. Double-click to send this function alone.";
-  b.addEventListener("click", () => toggle(action));
-  b.addEventListener("dblclick", () => {
-    selected = new Set([action.id]);
-    refresh();
-    send();
-  });
-  $("actions").appendChild(b);
+function renderChips() {
+  allActions = pcAllActions(customTasks);
+  selected = new Set([...selected].filter((id) => allActions.some((a) => a.id === id)));
+  $("actions").textContent = "";
+  $("mine").textContent = "";
+  for (const action of allActions) {
+    const b = document.createElement("button");
+    b.className = "chip" + (action.custom ? " mine" : "");
+    b.textContent = (action.custom ? "★ " : "") + action.title;
+    b.dataset.id = action.id;
+    b.title = action.custom
+      ? action.task + "\n\nClick to select or unselect. Double-click to send this task alone."
+      : "Click to select or unselect. Double-click to send this function alone.";
+    b.addEventListener("click", () => toggle(action));
+    b.addEventListener("dblclick", () => {
+      selected = new Set([action.id]);
+      refresh();
+      send();
+    });
+    (action.custom ? $("mine") : $("actions")).appendChild(b);
+  }
+  $("mineLabel").hidden = !customTasks.length;
+  refresh();
 }
 
 function toggle(action) {
@@ -99,7 +109,7 @@ function toggle(action) {
     selected.delete(action.id);
   } else {
     // British and American English cannot be combined.
-    if (action.group) PC_ACTIONS.filter((a) => a.group === action.group).forEach((a) => selected.delete(a.id));
+    if (action.group) allActions.filter((a) => a.group === action.group).forEach((a) => selected.delete(a.id));
     selected.add(action.id);
   }
   refresh();
@@ -107,7 +117,7 @@ function toggle(action) {
 }
 
 function refresh() {
-  document.querySelectorAll("#actions .chip").forEach((b) => b.classList.toggle("on", selected.has(b.dataset.id)));
+  document.querySelectorAll(".chip").forEach((b) => b.classList.toggle("on", selected.has(b.dataset.id)));
   $("ask").hidden = !selected.has("ask");
   const n = selected.size;
   $("go").disabled = n === 0;
@@ -116,7 +126,50 @@ function refresh() {
     localStorage.setItem(SELECTED_KEY, JSON.stringify([...selected]));
   } catch (_) {}
 }
-refresh();
+
+/* ---------- Saving a question as a task ---------- */
+
+$("saveTaskOpen").addEventListener("click", () => {
+  if (!$("question").value.trim()) {
+    $("question").focus();
+    return;
+  }
+  $("saveTaskOpen").hidden = true;
+  $("saveTaskForm").hidden = false;
+  $("saveTaskName").focus();
+});
+
+$("saveTaskBtn").addEventListener("click", saveTask);
+$("saveTaskName").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    saveTask();
+  }
+});
+
+async function saveTask() {
+  const title = $("saveTaskName").value.trim();
+  const prompt = $("question").value.trim();
+  if (!title) {
+    $("saveTaskName").focus();
+    return;
+  }
+  const task = { id: "custom-" + Date.now(), title, prompt, rewrite: $("saveTaskRewrite").checked };
+  customTasks = customTasks.concat(task);
+  await browser.storage.local.set({ customTasks });
+  // Switch the selection from "Ask" to the new task.
+  selected.delete("ask");
+  selected.add(task.id);
+  $("question").value = "";
+  $("saveTaskName").value = "";
+  $("saveTaskForm").hidden = true;
+  $("saveTaskOpen").hidden = false;
+  $("saveTaskDone").hidden = false;
+  setTimeout(() => ($("saveTaskDone").hidden = true), 2000);
+  renderChips();
+}
+
+/* ---------- Sending ---------- */
 
 $("go").addEventListener("click", () => send());
 $("question").addEventListener("keydown", (e) => {
@@ -143,11 +196,34 @@ async function send() {
     return error("Type your question for “Ask Claude…”.");
   }
   // Keep the order of the list, whatever the order of the clicks.
-  const actionIds = PC_ACTIONS.filter((a) => selected.has(a.id)).map((a) => a.id);
-  const res = await browser.runtime.sendMessage({ type: "pc-send", actionIds, text, question: $("question").value.trim() });
+  const actionIds = allActions.filter((a) => selected.has(a.id)).map((a) => a.id);
+  const res = await browser.runtime.sendMessage({
+    type: "pc-send",
+    actionIds,
+    text,
+    question: $("question").value.trim(),
+    destination: $("destination").value
+  });
   if (res && !res.filled) {
     error("The prompt is on your clipboard: click in Claude's message box and press Ctrl+V.");
   } else {
     window.close();
   }
 }
+
+/* ---------- Start ---------- */
+
+(async () => {
+  const s = await browser.storage.local.get({ customTasks: [], destination: "incognito", chatUrl: "" });
+  customTasks = s.customTasks || [];
+  // "Send to" starts on your default; "My default chat" needs a chat saved in the settings.
+  const chatOption = $("destination").querySelector('option[value="chat"]');
+  chatOption.disabled = !s.chatUrl;
+  if (!s.chatUrl) chatOption.textContent = "My default chat (set it in the settings)";
+  $("destination").value = s.chatUrl && s.destination === "chat" ? "chat" : "incognito";
+  try {
+    selected = new Set(JSON.parse(localStorage.getItem(SELECTED_KEY) || "[]"));
+  } catch (_) {}
+  renderChips();
+  loadSelection();
+})();
