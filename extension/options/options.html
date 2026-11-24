@@ -8,29 +8,16 @@
 <body>
   <main>
     <h1><span class="logo"></span> Private Corrector settings</h1>
+    <p class="hint">The extension opens claude.ai with your selected text and the instructions for the action.
+      It uses your normal Claude account (Free, Pro or Max): no API key, no extra cost. Make sure you are signed in to claude.ai in Firefox.</p>
 
-    <section id="perm" class="warn" hidden>
-      Firefox has not yet allowed this extension to reach <code>api.anthropic.com</code>.
-      <button id="grant" class="btn primary">Allow access</button>
-    </section>
-
-    <label for="apiKey">Anthropic API key</label>
-    <div class="row">
-      <input id="apiKey" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
-      <button id="toggleKey" class="btn" type="button">Show</button>
-    </div>
-    <p class="hint">Create one at <a href="https://platform.claude.com/settings/keys" target="_blank" rel="noopener">platform.claude.com</a>.
-      It is stored only in this browser (extension local storage) and sent only to api.anthropic.com.</p>
-
-    <label for="model">Model</label>
-    <select id="model">
-      <option value="claude-opus-5-5">Claude Opus 5.5 (recommended)</option>
-      <option value="claude-sonnet-5-5">Claude Sonnet 5.5 (faster, cheaper)</option>
-      <option value="claude-haiku-5-5">Claude Haiku 5.5 (fastest, cheapest)</option>
-      <option value="claude-fable-5-2">Claude Fable 5.2 (most capable, most expensive)</option>
+    <label for="openIn">Open Claude</label>
+    <select id="openIn">
+      <option value="foreground">In a new tab, and switch to it</option>
+      <option value="background">In a new tab in the background</option>
     </select>
 
-    <label for="answerLanguage">Language of explanations (develop, papers, free questions)</label>
+    <label for="answerLanguage">Language of answers for Develop, Papers and Ask</label>
     <select id="answerLanguage">
       <option value="same">Same as the selected text</option>
       <option value="English">English</option>
@@ -40,22 +27,24 @@
       <option value="Italian">Italian</option>
       <option value="Portuguese">Portuguese</option>
     </select>
-    <p class="hint">Correction, reformulation and academic rewriting always keep the language of the text.</p>
+    <p class="hint">Correct, Reformulate and Academic always keep the language of the text.</p>
 
-    <label class="check"><input id="webSearch" type="checkbox"> Use web search to verify suggested research papers</label>
-    <p class="hint">Recommended: reduces invented references. Web search is billed per search and must be enabled for your organization in the Claude Console.</p>
+    <label for="customInstructions">Personal instructions (optional, added to every prompt)</label>
+    <textarea id="customInstructions" rows="3" placeholder="e.g. I write in British English. My field is molecular biology."></textarea>
 
-    <label for="customInstructions">Personal instructions (optional)</label>
-    <textarea id="customInstructions" rows="4" placeholder="e.g. I write in British English. Use the Oxford comma. My field is molecular biology."></textarea>
+    <details>
+      <summary>Advanced</summary>
+      <label for="urlTemplate">Claude address (<code>%s</code> is replaced by the prompt)</label>
+      <input id="urlTemplate" type="text" spellcheck="false">
+      <p class="hint">Change this only if claude.ai stops filling in the prompt. Without <code>%s</code>, Claude opens empty and you paste the prompt (it is always copied to the clipboard).</p>
+    </details>
 
     <div class="row actions">
       <button id="save" class="btn primary">Save</button>
-      <button id="test" class="btn">Test the key</button>
+      <button id="reset" class="btn">Reset to defaults</button>
       <span id="status" class="status"></span>
     </div>
   </main>
-  <script src="../common/actions.js"></script>
-  <script src="../common/util.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

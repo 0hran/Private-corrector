@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Private Corrector",
-  "version": "1.0.0",
-  "description": "Select text, then let Claude correct it with minimal changes, reformulate it, make it academic, develop it, suggest research papers or answer a free question.",
+  "version": "2.0.0",
+  "description": "Select text and send it to claude.ai to correct it with minimal changes, reformulate it, make it academic, develop it, find research papers or ask anything.",
   "icons": {
     "48": "icons/icon.svg",
     "96": "icons/icon.svg"
@@ -12,23 +12,14 @@
       "id": "private-corrector@local",
       "strict_min_version": "128.0",
       "data_collection_permissions": {
-        "required": ["websiteContent"]
+        "required": ["none"]
       }
     }
   },
-  "permissions": ["menus", "storage", "activeTab"],
-  "host_permissions": ["https://api.anthropic.com/*"],
+  "permissions": ["menus", "activeTab", "scripting", "storage", "clipboardWrite", "notifications"],
   "background": {
     "scripts": ["common/actions.js", "background.js"]
   },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["common/actions.js", "common/util.js", "content.js"],
-      "all_frames": true,
-      "run_at": "document_idle"
-    }
-  ],
   "action": {
     "default_title": "Private Corrector",
     "default_popup": "popup/popup.html",
@@ -41,7 +32,7 @@
   "commands": {
     "correct-selection": {
       "suggested_key": { "default": "Alt+Shift+C" },
-      "description": "Correct the selected text (minimal changes)"
+      "description": "Send the selected text to Claude for a minimal correction"
     },
     "ask-selection": {
       "suggested_key": { "default": "Alt+Shift+A" },

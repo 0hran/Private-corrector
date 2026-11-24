@@ -19,4 +19,5 @@ a { color: var(--accent); }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .actions { margin-top: 28px; }
 .status { color: var(--muted); font-size: 14px; }
-.warn { background: var(--warn); border-radius: 8px; padding: 12px; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+details { margin-top: 24px; }
+summary { cursor: pointer; color: var(--muted); }
