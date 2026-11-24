@@ -1,11 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Private Corrector",
-  "version": "7.0.0",
+  "version": "7.1.0",
   "description": "Select text and send it to Claude, ChatGPT or Gemini to correct it with minimal changes, reformulate, shorten, make it academic, explain, find research papers or run your own saved prompts.",
   "icons": {
-    "48": "icons/icon.svg",
-    "96": "icons/icon.svg"
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png",
+    "128": "icons/icon-128.png"
   },
   "browser_specific_settings": {
     "gecko": {
@@ -34,6 +37,7 @@
   ],
   "background": {
     "scripts": [
+      "common/compat.js",
       "common/actions.js",
       "common/providers.js",
       "background.js"
@@ -42,7 +46,11 @@
   "action": {
     "default_title": "Private Corrector",
     "default_popup": "popup/popup.html",
-    "default_icon": "icons/icon.svg"
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png"
+    }
   },
   "options_ui": {
     "page": "options/options.html",

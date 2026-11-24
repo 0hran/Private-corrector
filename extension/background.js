@@ -1,4 +1,7 @@
-/* Background script: reads the selection, builds the prompt, fills it in on Claude, ChatGPT or Gemini. */
+/*
+ * Background script: reads the selection, builds the prompt, fills it in on Gemini, Claude or ChatGPT.
+ * Runs as an event page in Firefox and as a service worker in Chrome (see chrome/sw.js).
+ */
 "use strict";
 
 const DEFAULT_SETTINGS = {
@@ -35,7 +38,14 @@ async function getSettings() {
 
 /* ---------- Context menu ---------- */
 
-async function createMenus() {
+// Menus are rebuilt one at a time (two rebuilds at once would create duplicate entries).
+let menusQueue = Promise.resolve();
+function createMenus() {
+  menusQueue = menusQueue.then(buildMenus, buildMenus);
+  return menusQueue;
+}
+
+async function buildMenus() {
   const s = await getSettings();
   await browser.menus.removeAll();
   const ctx = ["selection"];
@@ -141,6 +151,7 @@ async function sendToAI(action, text, question, override = {}) {
 
   const prompt = pcBuildPrompt(action, text, settings, question);
   await copyToClipboard(prompt);
+  let unconfirmedPrivate = false;
 
   const { aiMode } = await browser.storage.session.get("aiMode");
   let tab = await getAiTab();
@@ -180,6 +191,8 @@ async function sendToAI(action, text, question, override = {}) {
       await waitForLoad(tab.id, p);
       if (!p.privateUrl) {
         const state = await turnOnPrivateChat(tab.id, p);
+        // Reuse this chat next time only if private mode is confirmed; otherwise start afresh.
+        if (state !== "on") unconfirmedPrivate = true;
         if (state !== "on") {
           notify(
             state === "clicked"
@@ -190,8 +203,10 @@ async function sendToAI(action, text, question, override = {}) {
       }
     }
   }
-  await browser.storage.session.set({ aiMode: mode });
-  return { filled: await fillPrompt(tab.id, prompt, p.inputs), name: p.name };
+  const filled = await fillPrompt(tab.id, prompt, p.inputs);
+  if (filled && !unconfirmedPrivate) await browser.storage.session.set({ aiMode: mode });
+  else await browser.storage.session.remove("aiMode");
+  return { filled, name: p.name };
 }
 
 function chatKey(url) {
@@ -240,16 +255,26 @@ const WINDOW_HEIGHT = 720;
 async function openAiPage(settings, url) {
   let tab;
   if (settings.openIn === "window") {
-    let pos = {};
+    let bounds = { width: WINDOW_WIDTH, height: WINDOW_HEIGHT };
     try {
-      // Top-right of the current Firefox window.
+      // Top-right of the current browser window, and no bigger than it.
       const current = await browser.windows.getLastFocused();
-      pos = {
-        left: Math.max(0, current.left + current.width - WINDOW_WIDTH - 24),
-        top: Math.max(0, current.top + 80)
+      const width = Math.min(WINDOW_WIDTH, current.width);
+      const height = Math.min(WINDOW_HEIGHT, Math.max(300, current.height - 100));
+      bounds = {
+        width,
+        height,
+        left: Math.max(current.left, current.left + current.width - width - 24),
+        top: current.top + Math.min(80, Math.max(0, current.height - height))
       };
     } catch (_) {}
-    const win = await browser.windows.create({ url, type: "popup", width: WINDOW_WIDTH, height: WINDOW_HEIGHT, ...pos });
+    let win;
+    try {
+      win = await browser.windows.create({ url, type: "popup", ...bounds });
+    } catch (_) {
+      // The screen is too small for these bounds (Chrome refuses them): let the browser place it.
+      win = await browser.windows.create({ url, type: "popup" });
+    }
     tab = win.tabs[0];
   } else {
     tab = await browser.tabs.create({ url, active: settings.openIn !== "background" });
@@ -413,6 +438,11 @@ async function askQuestion(tab, frameIds) {
 
 async function copyToClipboard(text) {
   await browser.storage.session.set({ lastCopiedPrompt: text });
+  if (typeof globalThis.pcCopyViaOffscreen === "function") {
+    // Chrome: the background is a service worker without a page; copy from an offscreen document (chrome/sw.js).
+    await globalThis.pcCopyViaOffscreen(text);
+    return;
+  }
   try {
     await navigator.clipboard.writeText(text);
     return;
@@ -428,7 +458,7 @@ async function copyToClipboard(text) {
 function notify(message) {
   browser.notifications.create({
     type: "basic",
-    iconUrl: browser.runtime.getURL("icons/icon.svg"),
+    iconUrl: browser.runtime.getURL("icons/icon-128.png"),
     title: "Private Corrector",
     message
   });

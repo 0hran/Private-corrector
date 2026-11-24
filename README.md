@@ -1,6 +1,6 @@
 # Private Corrector
 
-A Firefox extension that sends the text you select to **Gemini (default), Claude or ChatGPT**, together with instructions for what you want done. It uses your normal account on that site (free or paid): no API key and no extra cost. You review the prompt and press Send yourself.
+A Firefox and Chrome extension that sends the text you select to **Gemini (default), Claude or ChatGPT**, together with instructions for what you want done. It uses your normal account on that site (free or paid): no API key and no extra cost. You review the prompt and press Send yourself.
 
 | Action | What the AI is asked to do |
 |---|---|
@@ -50,10 +50,43 @@ The prompt is **always copied to your clipboard** as well. If the extension can'
 
 ## Install
 
+Build both versions (or use the zips attached to a release):
+
+```bash
+./build.sh
+```
+
+This creates `dist/private-corrector-firefox.zip` and `dist/private-corrector-chrome.zip` (and the unzipped folders `dist/firefox/` and `dist/chrome/`).
+
+### Firefox
+
 1. Open `about:debugging#/runtime/this-firefox`.
-2. Click **Load Temporary Add-on…** and choose `extension/manifest.json`.
+2. Click **Load Temporary Add-on…** and choose `private-corrector-firefox.zip` (or `extension/manifest.json`).
 
 A temporary add-on is removed when Firefox restarts. To install it permanently, sign it for free as an unlisted (private) add-on with `npx web-ext sign --channel=unlisted` (credentials: https://addons.mozilla.org/developers/addon/api/key/), then open the `.xpi` file that it creates.
+
+### Chrome (and Edge, Brave, Opera…)
+
+1. Unzip `private-corrector-chrome.zip` into a folder you keep (Chrome loads it from there).
+2. Open `chrome://extensions` and turn on **Developer mode** (top right).
+3. Click **Load unpacked** and choose that folder.
+4. Optional: click the puzzle icon in the toolbar and pin Private Corrector.
+
+The extension stays installed after Chrome restarts. Chrome 127 or later is required.
+
+## Project layout
+
+```
+extension/            shared code; this folder is the Firefox version as is
+  manifest.json       Firefox manifest (Manifest V3, background scripts)
+  background.js       right-click menu, shortcuts, opens the AI page and fills in the prompt
+  common/compat.js    makes the same code run in Chrome (chrome.* vs browser.*)
+  common/actions.js   the functions and their instructions (edit here to tune them)
+  common/providers.js the AI websites: addresses, private chat, message box
+  popup/  options/    toolbar popup and settings page
+chrome/               Chrome-only files: service worker entry point, offscreen clipboard page
+build.sh              builds dist/firefox and dist/chrome (Chrome manifest generated)
+```
 
 ## What it can access
 
